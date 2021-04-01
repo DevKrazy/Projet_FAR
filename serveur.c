@@ -29,26 +29,26 @@ int main(int argc, char *argv[]) {
     // if accept() is successful, creates a new socket descriptor already connected
     int client2_socket_descriptor = accept(socket_descriptor, (struct sockaddr*) &client2_address, &client2_address_len);
 
-    int i = 0;
-    while (i < 3) {
         // Réception du client1
-        char reception_buffer[32]; //buffer reception
-        sleep(2);
-        recv(client1_socket_descriptor, reception_buffer, 32, 0); //reception message client 1
-        printf("Reçu du client1 : %s \n", reception_buffer);
+    char reception_buffer[32]; //buffer reception
+    sleep(2);
+    recv(client1_socket_descriptor, reception_buffer, 32, 0); //reception message client 1
+    printf("Reçu du client1 : %s \n", reception_buffer);
 
         // Envoi au client2
-        send(client2_socket_descriptor, reception_buffer, 32, 0);
-        printf("Envoyé au client2 : %s \n", reception_buffer);
+    send(client2_socket_descriptor, reception_buffer, 32, 0);
+    printf("Envoyé au client2 : %s \n", reception_buffer);
 
-        i++;
-    }
-
-    /*
     recv(client2_socket_descriptor, reception_buffer, 32, 0);//reception message 2e client
     printf("recu : %s \n", reception_buffer) ;
-    send(client1_socket_descriptor, reception_buffer, 32, 0) ; //envoie au client 1
-     */
+    send(client1_socket_descriptor, reception_buffer, 32, 0) ; //send to client 1
+     
+
+    
+    recv(client2_socket_descriptor, reception_buffer, 32, 0);//reception message 2e client
+    printf("recu : %s \n", reception_buffer) ;
+    send(client1_socket_descriptor, reception_buffer, 32, 0) ; //Send to client 1
+     
 
     shutdown(client2_socket_descriptor, 2) ;
     shutdown(client1_socket_descriptor, 2) ;
