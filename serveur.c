@@ -23,32 +23,55 @@ int main(int argc, char *argv[]) {
     // if accept() is successful, creates a new socket descriptor already connected
     int client1_socket_descriptor = accept(socket_descriptor, (struct sockaddr*) &client1_address, &client1_address_len);
 
+    int clientid1=1;
+    send(client1_socket_descriptor, &clientid1, 4, 0);
+    printf("id1 envoyé au client 1 : \n");
+
     // client2 address config
     struct sockaddr_in client2_address;
     socklen_t client2_address_len = sizeof(struct sockaddr_in);
     // if accept() is successful, creates a new socket descriptor already connected
     int client2_socket_descriptor = accept(socket_descriptor, (struct sockaddr*) &client2_address, &client2_address_len);
 
-    int i = 0;
-    while (i < 3) {
-        // Réception du client1
-        char reception_buffer[32]; //buffer reception
-        sleep(2);
-        recv(client1_socket_descriptor, reception_buffer, 32, 0); //reception message client 1
-        printf("Reçu du client1 : %s \n", reception_buffer);
+    int clientid2=2;
+    send(client2_socket_descriptor, &clientid2, 4, 0);
+    printf("id2 envoyé au client 2 : \n");
 
-        // Envoi au client2
-        send(client2_socket_descriptor, reception_buffer, 32, 0);
-        printf("Envoyé au client2 : %s \n", reception_buffer);
 
-        i++;
-    }
+    // Réception du client1
 
-    /*
+
+    char reception_buffer[32]; //buffer reception
+
+    sleep(1);
+    recv(client1_socket_descriptor, reception_buffer, 32, 0); //reception message client 1
+    printf("Reçu du client1 : %s \n", reception_buffer);
+
+    // Envoi au client2
+    int nb = (int)send(client2_socket_descriptor, reception_buffer, 32, 0);
+    printf("envoyé du client1 : %s %d \n", reception_buffer,nb);
+
+    //printf("Envoyé au client2 : %s \n", reception_buffer);
+
     recv(client2_socket_descriptor, reception_buffer, 32, 0);//reception message 2e client
-    printf("recu : %s \n", reception_buffer) ;
-    send(client1_socket_descriptor, reception_buffer, 32, 0) ; //envoie au client 1
-     */
+    printf("Reçu de client2: %s \n", reception_buffer) ;
+    int nb2 = (int)send(client1_socket_descriptor, reception_buffer, 32, 0) ; //send to client 1
+    printf("envoye du client2 : %s %d \n", reception_buffer,nb2);
+
+    recv(client1_socket_descriptor, reception_buffer, 32, 0); //reception message client 1
+    printf("Reçu du client1 : %s \n", reception_buffer);
+
+    // Envoi au client2
+    send(client2_socket_descriptor, reception_buffer, 32, 0);
+    printf("envoyé du client1 : %s %d \n", reception_buffer,nb);
+
+    //printf("Envoyé au client2 : %s \n", reception_buffer);
+
+    recv(client2_socket_descriptor, reception_buffer, 32, 0);//reception message 2e client
+    printf("Reçu de client2: %s \n", reception_buffer) ;
+    send(client1_socket_descriptor, reception_buffer, 32, 0) ; //send to client 1
+    printf("envoye du client2 : %s %d \n", reception_buffer,nb2);
+
 
     shutdown(client2_socket_descriptor, 2) ;
     shutdown(client1_socket_descriptor, 2) ;
