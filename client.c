@@ -5,9 +5,11 @@
 #include <string.h>
 #include <unistd.h>
 
-int MAX_SIZE = 1000;
-
 int main(int argc, char *argv[]) {
+
+    /*
+     * Socket setup
+     */
 
     int socket_descriptor = socket(PF_INET, SOCK_STREAM, 0); // creates a TCP socket
 
@@ -19,51 +21,58 @@ int main(int argc, char *argv[]) {
 
     socklen_t server_address_len = sizeof(struct sockaddr_in);
     connect(socket_descriptor, (struct sockaddr*) &server_address, server_address_len); // opens the socket with the configured address
+    printf("Connexion au serveur réussie !\n");
+
     // receives the client id from the server
     int client_id;
-    recv(socket_descriptor, &client_id, 4, 0) ;
-    printf("ClientID: %d\n", client_id);
-
-    //int i =0;
-    //while (i < 3) {
-
-      if (client_id == 1) {
-
-        // Sends a message to the server
-        char send_buffer[MAX_SIZE];
-        printf("Mon message => ");
-        fgets(send_buffer, MAX_SIZE, stdin);
-        send(socket_descriptor, send_buffer, strlen(send_buffer) + 1, 0);
-        //free(send_buffer);
-
-        // Receives a message from the server
-        char reception_buffer[MAX_SIZE];
-        printf("r_buffer : %ld\n", strlen(reception_buffer));
-        recv(socket_descriptor, &reception_buffer, strlen(reception_buffer) + 1, 0);
-        printf("Réponse : %s\n", reception_buffer);
+    recv(socket_descriptor, &client_id, 4, 0);
+    printf("Votre ID de client boucle est : %d\n", client_id);
 
 
-      }
-      else if (client_id == 2) {
+    /*
+     * Discussion between clients
+     */
 
-        // Receives a message from the server
-        char reception_buffer[MAX_SIZE];
-        printf("r_buffer : %ld\n", strlen(reception_buffer));
-        recv(socket_descriptor, &reception_buffer, strlen(reception_buffer) + 1, 0);
-        printf("Réponse : %s\n", reception_buffer);
+    int malloc_size = 32 * sizeof(char);
+    char *buffer;
 
-        // Sends a message to the server
-         char send_buffer[MAX_SIZE];
-        printf("Mon message => ");
-        fgets(send_buffer, MAX_SIZE, stdin);
-        send(socket_descriptor, send_buffer, strlen(send_buffer) + 1, 0);
+    while (1) {
+        if (client_id == 1) {
 
-      } else {
-        printf("Mauvais id de client : %d\n", client_id);
-      }
-      //i++;
+            // Sends a message to the server
+            buffer = malloc(malloc_size);
+            printf("Mon message : ");
+            fgets(buffer, malloc_size, stdin);
+            send(socket_descriptor, buffer, malloc_size + 1, 0);
+            free(buffer);
 
-    //}
+            // Receives a message from the server
+            buffer = malloc(malloc_size);
+            recv(socket_descriptor, buffer, 32 + 1, 0);
+            printf("Réponse : %s", buffer);
+            free(buffer);
+
+
+        } else if (client_id == 2) {
+
+            // Receives a message from the server
+            buffer = malloc(malloc_size);
+            recv(socket_descriptor, buffer, 32 + 1, 0);
+            printf("Réponse : %s", buffer);
+            free(buffer);
+
+            // Sends a message to the server
+            buffer = malloc(malloc_size);
+            printf("Mon message : ");
+            fgets(buffer, malloc_size, stdin);
+            send(socket_descriptor, buffer, malloc_size + 1, 0);
+            free(buffer);
+
+        } else {
+            printf("Mauvais id de client : %d\n", client_id);
+            exit(-1);
+        }
+    }
 
     shutdown(socket_descriptor, 2);
 }
