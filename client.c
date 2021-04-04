@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
             // Receives a message from the server
             buffer = malloc(malloc_size);
-            recv(socket_descriptor, buffer, 32 + 1, 0);
+            recv(socket_descriptor, buffer, malloc_size + 1, 0);
             printf("Réponse : %s", buffer);
             free(buffer);
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 
             // Receives a message from the server
             buffer = malloc(malloc_size);
-            recv(socket_descriptor, buffer, 32 + 1, 0);
+            recv(socket_descriptor, buffer, malloc_size + 1, 0);
             printf("Réponse : %s", buffer);
             free(buffer);
 

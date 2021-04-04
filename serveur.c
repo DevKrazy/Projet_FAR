@@ -55,29 +55,23 @@ int main(int argc, char *argv[]) {
     while (strcmp(buffer, "fin") != 0) {
 
         // Reception from client 1
-        printf("Before buffer malloc");
         buffer = malloc(malloc_size);
-        printf("After buffer malloc");
-        recv(client1_socket_descriptor, buffer, 32, 0); //reception message client 1
+        recv(client1_socket_descriptor, buffer, malloc_size + 1, 0); //reception message client 1
         printf("Reçu du client 1 : %s", buffer);
-        free(buffer);
 
         // Sends the message to client 2
-        buffer = malloc(malloc_size);
-        int sent_bytes = (int) send(client2_socket_descriptor, buffer, 32, 0);
-        printf("Envoyé au client 2 : %s [debug] bytes %d\n", buffer, sent_bytes);
+        send(client2_socket_descriptor, buffer, malloc_size + 1, 0);
+        printf("Envoyé au client 2 : %s", buffer);
         free(buffer);
 
         // Reception from client 2
         buffer = malloc(malloc_size);
-        recv(client2_socket_descriptor, buffer, 32, 0); //reception message 2e client
-        printf("Reçu de client 2: %s", buffer);
-        free(buffer);
+        recv(client2_socket_descriptor, buffer, malloc_size + 1, 0); //reception message 2e client
+        printf("Reçu du client 2: %s", buffer);
 
         // Sends the message to client 1
-        buffer = malloc(malloc_size);
-        int nb2 = (int) send(client1_socket_descriptor, buffer, 32, 0); //send to client 1
-        printf("Envoyé au client 1 : %s [debug] bytes %d\n", buffer, nb2);
+        send(client1_socket_descriptor, buffer, malloc_size + 1, 0); //send to client 1
+        printf("Envoyé au client 1 : %s", buffer);
         free(buffer);
     }
 
