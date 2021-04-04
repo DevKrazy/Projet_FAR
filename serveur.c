@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "comm_utils.h"
 
 int main(int argc, char *argv[]) {
 
@@ -49,30 +50,26 @@ int main(int argc, char *argv[]) {
      * Discussion between clients
      */
 
-    int malloc_size = 32 * sizeof(char);
-    char *buffer = malloc(malloc_size);
+    //int malloc_size = 32 * sizeof(char);
+    char buffer[MAX_SIZE];
 
-    while (strcmp(buffer, "fin") != 0) {
+    while (strcmp(buffer, "fin\n") != 0) {
 
         // Reception from client 1
-        buffer = malloc(malloc_size);
-        recv(client1_socket_descriptor, buffer, malloc_size + 1, 0); //reception message client 1
+        recv(client1_socket_descriptor, buffer, MAX_SIZE + 1, 0); //reception message client 1
         printf("Reçu du client 1 : %s", buffer);
 
         // Sends the message to client 2
-        send(client2_socket_descriptor, buffer, malloc_size + 1, 0);
+        send(client2_socket_descriptor, buffer, MAX_SIZE + 1, 0);
         printf("Envoyé au client 2 : %s", buffer);
-        free(buffer);
 
         // Reception from client 2
-        buffer = malloc(malloc_size);
-        recv(client2_socket_descriptor, buffer, malloc_size + 1, 0); //reception message 2e client
+        recv(client2_socket_descriptor, buffer, MAX_SIZE + 1, 0); //reception message 2e client
         printf("Reçu du client 2: %s", buffer);
 
         // Sends the message to client 1
-        send(client1_socket_descriptor, buffer, malloc_size + 1, 0); //send to client 1
+        send(client1_socket_descriptor, buffer, MAX_SIZE + 1, 0); //send to client 1
         printf("Envoyé au client 1 : %s", buffer);
-        free(buffer);
     }
 
         /*
@@ -97,4 +94,8 @@ int main(int argc, char *argv[]) {
     shutdown(client2_socket_descriptor, 2) ;
     shutdown(client1_socket_descriptor, 2) ;
     shutdown(socket_descriptor, 2) ;
+
+    close(client2_socket_descriptor);
+    close(client1_socket_descriptor);
+    close(socket_descriptor);
 }

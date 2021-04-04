@@ -1,0 +1,8 @@
+
+#ifndef PROJET_FAR_COMM_UTILS_H
+#define PROJET_FAR_COMM_UTILS_H
+
+#endif //PROJET_FAR_COMM_UTILS_H
+
+#define MAX_SIZE 10000
+
