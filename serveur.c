@@ -72,30 +72,15 @@ int main(int argc, char *argv[]) {
         printf("Envoyé au client 1 : %s", buffer);
     }
 
-        /*
-        recv(client1_socket_descriptor, reception_buffer, 32, 0); //reception message client 1
-        printf("Reçu du client 1 : %s \n", reception_buffer);
-
-        // Envoi au client2
-        send(client2_socket_descriptor, reception_buffer, 32, 0);
-        printf("Envoyé au client 1 : %s %d \n", reception_buffer, sent_bytes);
-
-        //printf("Envoyé au client2 : %s \n", reception_buffer);
-
-        recv(client2_socket_descriptor, reception_buffer, 32, 0);//reception message 2e client
-        printf("Reçu de client2: %s \n", reception_buffer) ;
-        send(client1_socket_descriptor, reception_buffer, 32, 0) ; //send to client 1
-        printf("envoye du client2 : %s %d \n", reception_buffer,nb2);
-        */
-
     /*
      * Sockets shutdown
      */
     shutdown(client2_socket_descriptor, 2) ;
     shutdown(client1_socket_descriptor, 2) ;
-    shutdown(socket_descriptor, 2) ;
+
 
     close(client2_socket_descriptor);
     close(client1_socket_descriptor);
+    shutdown(socket_descriptor, 2) ;
     close(socket_descriptor);
 }
