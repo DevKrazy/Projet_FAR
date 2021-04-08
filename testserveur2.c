@@ -18,7 +18,7 @@ void *Sendthread (int client_id){
     //pthread_mutex_lock(&thread_mutex);
     recv(client_id, &buffer, MAX_SIZE + 1, 0); //reception message 
     printf("Reçu du client 1 : %s", buffer);
-    send(client_id, &buffer, 4, 0);
+    send(client_id, &buffer, 4, 0); //ATTENTION ICI IL FAUT CLIENT_ID D'UN AUTRE CLIENT 
     printf("Envoyé au client 2 : %s", buffer);
 }
 
