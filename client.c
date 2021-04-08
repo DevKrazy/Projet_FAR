@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     //int malloc_size = 32 * sizeof(char);
     char buffer[MAX_SIZE];
 
-    while (1) {
+    while (strcmp(buffer, "fin\n") != 0) {
         printf("Entrée dans la boucle while. (%d)\n", client_id);
         if (client_id == 1) {
 
@@ -77,4 +77,3 @@ int main(int argc, char *argv[]) {
 
     shutdown(socket_descriptor, 2);
 }
-
