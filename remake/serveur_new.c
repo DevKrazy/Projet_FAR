@@ -4,10 +4,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "../comm_utils.h"
+#include <pthread.h>
 #include "utils.h"
 
+//pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+int client[MAX_CLIENTS]; // list of connected clients
+pthread_t thread[MAX_THREADS];
+
 //TODO: faire une fonction send et recv qui envoie et recoivent le nb de octets à transférer
+
+void *send_thread(void *socket) {
+    printf("Thread client créé !\n");
+    char send_buffer[MAX_SIZE];
+    int client_socket = (int) (long) socket;
+    while (1) {
+        recv(client_socket, send_buffer, MAX_SIZE, 0);
+        printf("Reçu : %s\n", send_buffer);
+        for (int j = 0; j < MAX_CLIENTS; j++) {
+            if (client[j] != client_socket) {
+                send(client[j], send_buffer, 4, 0); // modifié le j en client[j]
+                printf("Envoyé au client : %s\n", send_buffer);
+            } else {
+                printf("On n'envoie pas, c'est le client lui-même•\n");
+            }
+        }
+    }
+    close(client_socket);
+}
 
 int main(int argc, char *argv[]) {
 
@@ -46,11 +69,51 @@ int main(int argc, char *argv[]) {
     check_error(listen_res, "Erreur lors du listen\n");
     printf("Le serveur écoute sur le port %s.\n", argv[1]);
 
+    int client_index = 0;
+
+    while (1) {
+        // client address initialization
+        struct sockaddr_in client_address;
+        socklen_t client_address_len = sizeof(struct sockaddr_in);
+
+        // accept
+        if (client_index < MAX_CLIENTS) {
+            int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+            if (client_socket != -1){
+                pthread_create(&thread[client_index], NULL, send_thread, (void *) (long) client_socket);
+                client[client_index]= (int) client_socket;
+                client_index += 1;
+                printf("Un client connecté de plus ! %d clients \n", client_index);
+                if (client_index == MAX_CLIENTS) {
+                    printf("Nombre de clients maximum atteint !\n");
+                }
+            }
+        }
+    }
+
+    close(server_socket);
+
+    /*for (int i = 0; i < MAX_CLIENTS; i++) {
+
+        // client address initialization
+        struct sockaddr_in client_address;
+        socklen_t client_address_len = sizeof(struct sockaddr_in);
+
+        // accept
+        int client_socket = accept(server_socket, (struct sockaddr*) &client_address, &client_address_len);
+        printf("Un client connecté de plus !\n");
+
+        if (client_socket != -1){
+            pthread_create(&thread[i], NULL, send_thread, (void *) (long) client_socket);
+            client[i]= (int) client_socket;
+        }
+    }*/
 
     /*
      * Clients sockets setup
      */
 
+    /*
     // clients addresses and sockets initialization
     struct sockaddr_in client1_address; // used by "accept" to store the client's address
     int client1_socket = 0;
@@ -58,13 +121,11 @@ int main(int argc, char *argv[]) {
     int client2_socket = 0;
     socklen_t client_address_len = sizeof(struct sockaddr_in); // len of a client address
 
-    char buffer[MAX_SIZE];
-
     while (1) {
 
-        /*
+        *//*
          * Clients id sending
-         */
+         *//*
 
         if (client1_socket == 0) {
             // client 1 is not connected
@@ -90,9 +151,9 @@ int main(int argc, char *argv[]) {
         }
 
 
-        /*
+        *//*
          * Communication between clients
-         */
+         *//*
 
         int recv1_res = recv(client1_socket, buffer, MAX_SIZE, 0);
         check_error(recv1_res, "Erreur lors de la réception du message du client 1.\n");
@@ -121,6 +182,6 @@ int main(int argc, char *argv[]) {
 
         send(client1_socket, buffer, MAX_SIZE, 0);
         printf("Envoyé au client 1 : %s", buffer);
-    }
+    }*/
 }
 

@@ -4,8 +4,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "../comm_utils.h"
+#include <pthread.h>
 #include "utils.h"
+
+//pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+int client[MAX_CLIENTS]; // list of connected clients
+pthread_t thread[1];
+
+void *send_thread(void *socket) {
+    char send_buffer[MAX_SIZE];
+    int server_socket = (int) (long) socket;
+    while (1) {
+        printf("Entrez votre message: ");
+        fgets(send_buffer, MAX_SIZE, stdin);
+        send(server_socket, send_buffer, 4, 0);
+        printf("Envoyé au serveur : %s", send_buffer);
+    }
+}
 
 int main(int argc, char *argv[]) {
 
@@ -33,17 +48,34 @@ int main(int argc, char *argv[]) {
     server_address.sin_family = AF_INET; // address type
     inet_pton(AF_INET, argv[1], &(server_address.sin_addr)); //converts the address from the CLI to the correct format
     server_address.sin_port = htons(atoi(argv[2])); // address port (converted from the CLI)
+    printf("Adresse du serveur configurée avec succès !\n");
 
     // connection to the server
     socklen_t server_address_len = sizeof(struct sockaddr_in);
+    printf("Before connect\n");
     int connect_res = connect(server_socket, (struct sockaddr*) &server_address, server_address_len); // opens the socket with the configured address
     check_error(connect_res, "Erreur lors de la connexion au serveur.\n");
     printf("Connexion au serveur réussie !\n");
 
+    // send thread start
+    pthread_create(&thread[0], NULL, send_thread, (void *) (long) server_socket);
+
+    while (1) {
+
+        // main process = messages reception
+        char recv_buffer[MAX_SIZE];
+        printf("Attente d'un message du serveur...\n");
+        int recv_res = recv(server_socket, recv_buffer, MAX_SIZE, 0);
+        printf("Message du serveur : %s\n", recv_buffer);
+        if (recv_res == 0) {
+            terminate_program(0);
+        }
+    }
+
 
     /*
      * Communication with the server
-     */
+     *//*
 
     // reception of the client id
     int client_id = 0;
@@ -76,7 +108,7 @@ int main(int argc, char *argv[]) {
 
             printf("Attente d'un message du client 1. (2)(%d)\n", client_id);
             int recv2_res = recv(server_socket, buffer, MAX_SIZE, 0);
-            printf("Réponse (1)(%d) : %s", client_id, buffer);
+            printf("Réponse (2)(%d) : %s", client_id, buffer);
             if (recv2_res == 0) {
                 terminate_program(0);
             }
@@ -92,5 +124,5 @@ int main(int argc, char *argv[]) {
             printf("ID de client incorrect (%d).\n", client_id);
             terminate_program(-1);
         }
-    }
+    }*/
 }
