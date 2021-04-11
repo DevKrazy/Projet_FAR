@@ -5,7 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "utils.h"
+#include "headers/utils.h"
 
 //pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 int clients[MAX_CLIENTS]; // list of connected clients

@@ -3,77 +3,74 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include "comm_utils.h"
+#include <pthread.h>
+#include "headers/utils.h"
+
+//pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int clients[MAX_CLIENTS]; // list of connected clients
+pthread_t thread[1];
+
+void *send_thread(void *socket) {
+    char send_buffer[MAX_SIZE];
+    int server_socket = (int) (long) socket;
+    while (1) {
+        //printf("Entrez votre message: ");
+        //pthread_mutex_lock(&mutex);
+        fgets(send_buffer, MAX_SIZE, stdin);
+        send(server_socket, send_buffer, MAX_SIZE, 0);
+        printf("[Vous] : %s", send_buffer);
+        //pthread_mutex_unlock(&mutex);
+    }
+
+}
 
 int main(int argc, char *argv[]) {
+
+    // checks for the correct args number
+    if (argc != 3) {
+        printf("Nombre d'arguments incorrect. Utilisation :\n");
+        printf("%s <adresse_ip_serveur> <num_port>\n", argv[0]);
+        exit(0);
+    } else {
+        printf("Lancement du clients...\n");
+    }
+
 
     /*
      * Socket setup
      */
 
-    int socket_descriptor = socket(PF_INET, SOCK_STREAM, 0); // creates a TCP socket
+    // creates a socket in the IPV4 domain using TCP protocol
+    int server_socket = socket(PF_INET, SOCK_STREAM, 0);
+    check_error(server_socket, "Erreur lors de la création de la socket serveur.\n");
+    printf("Socket serveur créée avec succès.\n");
 
-    //server address configuration
+    // server address configuration
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET; // address type
     inet_pton(AF_INET, argv[1], &(server_address.sin_addr)); //converts the address from the CLI to the correct format
     server_address.sin_port = htons(atoi(argv[2])); // address port (converted from the CLI)
+    printf("Adresse du serveur configurée avec succès !\n");
 
+    // connection to the server
     socklen_t server_address_len = sizeof(struct sockaddr_in);
-    connect(socket_descriptor, (struct sockaddr*) &server_address, server_address_len); // opens the socket with the configured address
+    printf("Before connect\n");
+    int connect_res = connect(server_socket, (struct sockaddr*) &server_address, server_address_len); // opens the socket with the configured address
+    check_error(connect_res, "Erreur lors de la connexion au serveur.\n");
     printf("Connexion au serveur réussie !\n");
 
-    // receives the clients id from the server
-    int temp_client_id;
-    recv(socket_descriptor, &temp_client_id, 4, 0);
-    const int client_id = temp_client_id;
-    printf("Votre ID de clients boucle est : %d\n", client_id);
+    // send thread start
+    pthread_create(&thread[0], NULL, send_thread, (void *) (long) server_socket);
 
+    while (1) {
 
-    /*
-     * Discussion between clients
-     */
-
-    //int malloc_size = 32 * sizeof(char);
-    char buffer[MAX_SIZE];
-
-    while (strcmp(buffer, "fin\n") != 0) {
-        printf("Entrée dans la boucle while. (%d)\n", client_id);
-        if (client_id == 1) {
-
-            // Sends a message to the server
-            printf("Mon message (1)(%d) : ", client_id);
-            fgets(buffer, MAX_SIZE, stdin);
-            send(socket_descriptor, buffer, MAX_SIZE + 1, 0);
-            printf("Message envoyé (1)(%d) !\n", client_id);
-
-            // Receives a message from the server
-            printf("Attente d'un message du clients 2. (%d)\n", client_id);
-            recv(socket_descriptor, buffer, MAX_SIZE + 1, 0);
-            //client_id = 1; // le client_id prend la valeur 2 tout seul comme un grand après le recv (POURQUOI????)
-            printf("Réponse (1)(%d) : %s", client_id, buffer);
-
-
-        } else if (client_id == 2) {
-
-            // Receives a message from the server
-            printf("Attente d'un message du clients 1 (%d).\n", client_id);
-            recv(socket_descriptor, buffer, MAX_SIZE + 1, 0);
-            //client_id = 2; // le client_id prend la valeur 1 tout seul comme un grand après le recv (POURQUOI????)
-            printf("Réponse (2)(%d) : %s", client_id, buffer);
-
-            // Sends a message to the server
-            printf("Mon message (2)(%d) : ", client_id);
-            fgets(buffer, MAX_SIZE, stdin);
-            send(socket_descriptor, buffer, MAX_SIZE + 1, 0);
-            printf("Message envoyé (2)(%d) !\n", client_id);
-
-        } else {
-            printf("Mauvais id de clients : %d\n", client_id);
-            exit(-1);
+        // main process = messages reception
+        char recv_buffer[MAX_SIZE];
+        //printf("Attente d'un message du serveur...\n");
+        int recv_res = recv(server_socket, recv_buffer, MAX_SIZE, 0);
+        printf("[Serveur] : %s", recv_buffer);
+        if (recv_res == 0) {
+            terminate_program(0);
         }
     }
-
-    shutdown(socket_descriptor, 2);
 }

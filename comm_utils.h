@@ -1,9 +1,0 @@
-
-#ifndef PROJET_FAR_COMM_UTILS_H
-#define PROJET_FAR_COMM_UTILS_H
-
-#endif //PROJET_FAR_COMM_UTILS_H
-
-#define MAX_SIZE 10000
-#define END_WORD "fin\n"
-

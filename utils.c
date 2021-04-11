@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "utils.h"
+#include "headers/utils.h"
 
 /**
  * Checks a given variable value and prints an error message if the variable value is -1.
