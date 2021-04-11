@@ -3,7 +3,6 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <pthread.h>
 #include "utils.h"
 
@@ -15,10 +14,10 @@ void *send_thread(void *socket) {
     char send_buffer[MAX_SIZE];
     int server_socket = (int) (long) socket;
     while (1) {
-        printf("Entrez votre message: ");
+        //printf("Entrez votre message: ");
         fgets(send_buffer, MAX_SIZE, stdin);
-        send(server_socket, send_buffer, 4, 0);
-        printf("Envoyé au serveur : %s", send_buffer);
+        send(server_socket, send_buffer, MAX_SIZE, 0);
+        printf("[Vous] : %s", send_buffer);
     }
 }
 
@@ -64,9 +63,9 @@ int main(int argc, char *argv[]) {
 
         // main process = messages reception
         char recv_buffer[MAX_SIZE];
-        printf("Attente d'un message du serveur...\n");
+        //printf("Attente d'un message du serveur...\n");
         int recv_res = recv(server_socket, recv_buffer, MAX_SIZE, 0);
-        printf("Message du serveur : %s\n", recv_buffer);
+        printf("[Serveur] : %s", recv_buffer);
         if (recv_res == 0) {
             terminate_program(0);
         }

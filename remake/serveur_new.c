@@ -11,7 +11,7 @@
 int client[MAX_CLIENTS]; // list of connected clients
 pthread_t thread[MAX_THREADS];
 
-//TODO: faire une fonction send et recv qui envoie et recoivent le nb de octets à transférer
+//TODO: faire une fonction send et recv qui envoie et recoivent le nb d'octets à transférer
 
 void *send_thread(void *socket) {
     printf("Thread client créé !\n");
@@ -19,11 +19,11 @@ void *send_thread(void *socket) {
     int client_socket = (int) (long) socket;
     while (1) {
         recv(client_socket, send_buffer, MAX_SIZE, 0);
-        printf("Reçu : %s\n", send_buffer);
+        printf("Reçu : %s", send_buffer);
         for (int j = 0; j < MAX_CLIENTS; j++) {
             if (client[j] != client_socket) {
-                send(client[j], send_buffer, 4, 0); // modifié le j en client[j]
-                printf("Envoyé au client : %s\n", send_buffer);
+                send(client[j], send_buffer, MAX_SIZE, 0); // modifié le j en client[j]
+                printf("Envoyé au client : %s", send_buffer);
             } else {
                 printf("On n'envoie pas, c'est le client lui-même•\n");
             }
