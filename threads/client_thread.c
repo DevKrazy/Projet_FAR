@@ -20,7 +20,7 @@ void *Sendthread (void* socket_descriptor_void) {
     while (strcmp(buffer_send, "fin\n") != 0){
         fgets(buffer_send, MAX_SIZE, stdin);
         send(socket_descriptor, buffer_send, 4, 0);
-        printf("Envoyé au client: %s", buffer_send);
+        printf("Envoyé au clients: %s", buffer_send);
     }
     pthread_exit(0);
 }

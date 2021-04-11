@@ -13,19 +13,19 @@
 pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 char buffer[MAX_SIZE];
 /*Global variable */
-int client[MAX_CLIENTS]; //listes des clients connectés
+int clients[MAX_CLIENTS]; //listes des clients connectés
 
-/*receiving message from a client and sending them to other clients*/
+/*receiving message from a clients and sending them to other clients*/
 void *Sendthread (void* client_socket_descriptor_void){
     long client_socket_descriptor = (long) client_socket_descriptor_void;
     //pthread_mutex_lock(&thread_mutex);
     recv((int) client_socket_descriptor, buffer, MAX_SIZE + 1, 0); //reception message
-    printf("Reçu du client 1 : %s", buffer);
+    printf("Reçu du clients 1 : %s", buffer);
     for(int j=0; j < MAX_CLIENTS; j++)
     {
-        if(client[j] != client_socket_descriptor){
+        if(clients[j] != client_socket_descriptor){
             send(j, buffer, 4, 0);
-            printf("Envoyé au client : %s", buffer);
+            printf("Envoyé au clients : %s", buffer);
         }else {
             printf("Client_ID");
         }
@@ -56,10 +56,10 @@ int main(int argc, char *argv[]) {
         struct sockaddr_in client_address;
         socklen_t client_address_len = sizeof(struct sockaddr_in);
         long client_socket_descriptor = accept(socket_descriptor, (struct sockaddr*) &client_address, &client_address_len);
-        printf("Un client de plus !\n");
+        printf("Un clients de plus !\n");
         if (client_socket_descriptor!=-1){
             pthread_create(&thread[i],NULL,Sendthread,(void *)client_socket_descriptor);
-            client[i]= (int) client_socket_descriptor;
+            clients[i]= (int) client_socket_descriptor;
         }
         i++;
     }

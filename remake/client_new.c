@@ -6,7 +6,8 @@
 #include <pthread.h>
 #include "utils.h"
 
-//pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+//pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int clients[MAX_CLIENTS]; // list of connected clients
 pthread_t thread[1];
 
 void *send_thread(void *socket) {
@@ -14,10 +15,13 @@ void *send_thread(void *socket) {
     int server_socket = (int) (long) socket;
     while (1) {
         //printf("Entrez votre message: ");
+        //pthread_mutex_lock(&mutex);
         fgets(send_buffer, MAX_SIZE, stdin);
         send(server_socket, send_buffer, MAX_SIZE, 0);
         printf("[Vous] : %s", send_buffer);
+        //pthread_mutex_unlock(&mutex);
     }
+
 }
 
 int main(int argc, char *argv[]) {
@@ -28,7 +32,7 @@ int main(int argc, char *argv[]) {
         printf("%s <adresse_ip_serveur> <num_port>\n", argv[0]);
         exit(0);
     } else {
-        printf("Lancement du client...\n");
+        printf("Lancement du clients...\n");
     }
 
 
@@ -69,58 +73,4 @@ int main(int argc, char *argv[]) {
             terminate_program(0);
         }
     }
-
-
-    /*
-     * Communication with the server
-     *//*
-
-    // reception of the client id
-    int client_id = 0;
-    int recv_res = recv(server_socket, &client_id, sizeof(int), 0);
-    check_error(recv_res, "Erreur lors de la réception de l'id client.\n");
-    printf("Id client reçu : %d !\n", client_id);
-
-    char buffer[MAX_SIZE];
-
-    while (1) {
-
-        if (client_id == 1) {
-
-            printf("Entrez votre message : ");
-            fgets(buffer, MAX_SIZE, stdin);
-            send(server_socket, buffer, MAX_SIZE, 0);
-            if (strcmp(buffer, END_WORD) == 0) {
-               terminate_program(0);
-            }
-            printf("Message envoyé (1)(%d) !\n", client_id);
-
-            printf("Attente d'un message du client 2. (1)(%d)\n", client_id);
-            int recv1_res = recv(server_socket, buffer, MAX_SIZE, 0);
-            printf("Réponse (1)(%d) : %s", client_id, buffer);
-            if (recv1_res == 0) {
-                terminate_program(0);
-            }
-
-        } else if (client_id == 2) {
-
-            printf("Attente d'un message du client 1. (2)(%d)\n", client_id);
-            int recv2_res = recv(server_socket, buffer, MAX_SIZE, 0);
-            printf("Réponse (2)(%d) : %s", client_id, buffer);
-            if (recv2_res == 0) {
-                terminate_program(0);
-            }
-
-            printf("Entrez votre message : ");
-            fgets(buffer, MAX_SIZE, stdin);
-            send(server_socket, buffer, MAX_SIZE, 0);
-            if (strcmp(buffer, END_WORD) == 0) {
-                terminate_program(0);
-            }
-            printf("Message envoyé (2)(%d) !\n", client_id);
-        } else {
-            printf("ID de client incorrect (%d).\n", client_id);
-            terminate_program(-1);
-        }
-    }*/
 }

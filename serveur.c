@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
     int client_id1 = 1;
     send(client1_socket_descriptor, &client_id1, 4, 0);
-    printf("ID envoyé au client 1.\n");
+    printf("ID envoyé au clients 1.\n");
 
 
     // client2 address config
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 
     int client_id2 = 2;
     send(client2_socket_descriptor, &client_id2, 4, 0);
-    printf("ID envoyé au client 2.\n");
+    printf("ID envoyé au clients 2.\n");
 
 
     /*
@@ -55,21 +55,21 @@ int main(int argc, char *argv[]) {
 
     while (strcmp(buffer, "fin\n") != 0) {
 
-        // Reception from client 1
-        recv(client1_socket_descriptor, buffer, MAX_SIZE + 1, 0); //reception message client 1
-        printf("Reçu du client 1 : %s", buffer);
+        // Reception from clients 1
+        recv(client1_socket_descriptor, buffer, MAX_SIZE + 1, 0); //reception message clients 1
+        printf("Reçu du clients 1 : %s", buffer);
 
-        // Sends the message to client 2
+        // Sends the message to clients 2
         send(client2_socket_descriptor, buffer, MAX_SIZE + 1, 0);
-        printf("Envoyé au client 2 : %s", buffer);
+        printf("Envoyé au clients 2 : %s", buffer);
 
-        // Reception from client 2
-        recv(client2_socket_descriptor, buffer, MAX_SIZE + 1, 0); //reception message 2e client
-        printf("Reçu du client 2: %s", buffer);
+        // Reception from clients 2
+        recv(client2_socket_descriptor, buffer, MAX_SIZE + 1, 0); //reception message 2e clients
+        printf("Reçu du clients 2: %s", buffer);
 
-        // Sends the message to client 1
-        send(client1_socket_descriptor, buffer, MAX_SIZE + 1, 0); //send to client 1
-        printf("Envoyé au client 1 : %s", buffer);
+        // Sends the message to clients 1
+        send(client1_socket_descriptor, buffer, MAX_SIZE + 1, 0); //send to clients 1
+        printf("Envoyé au clients 1 : %s", buffer);
     }
 
     /*
