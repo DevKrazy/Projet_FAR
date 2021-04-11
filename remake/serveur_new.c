@@ -21,11 +21,12 @@ void *send_thread(void *socket) {
         recv(client_socket, send_buffer, MAX_SIZE, 0);
         printf("Reçu : %s", send_buffer);
         for (int j = 0; j < MAX_CLIENTS; j++) {
-            if (client[j] != client_socket) {
+            printf("client j : %d\n",client[j]);
+            if (client[j] != client_socket && client[j]!=0) {
                 send(client[j], send_buffer, MAX_SIZE, 0); // modifié le j en client[j]
                 printf("Envoyé au client : %s", send_buffer);
             } else {
-                printf("On n'envoie pas, c'est le client lui-même•\n");
+                printf("On n'envoie pas\n");
             }
         }
     }
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
     printf("Bind réussi !\n");
 
     // listen
-    int listen_res = listen(server_socket, 2); // listens for incoming connections (maximum 2 waiting connections)
+    int listen_res = listen(server_socket, MAX_CLIENTS); // listens for incoming connections (maximum 2 waiting connections)
     check_error(listen_res, "Erreur lors du listen\n");
     printf("Le serveur écoute sur le port %s.\n", argv[1]);
 
@@ -94,15 +95,12 @@ int main(int argc, char *argv[]) {
     close(server_socket);
 
     /*for (int i = 0; i < MAX_CLIENTS; i++) {
-
         // client address initialization
         struct sockaddr_in client_address;
         socklen_t client_address_len = sizeof(struct sockaddr_in);
-
         // accept
         int client_socket = accept(server_socket, (struct sockaddr*) &client_address, &client_address_len);
         printf("Un client connecté de plus !\n");
-
         if (client_socket != -1){
             pthread_create(&thread[i], NULL, send_thread, (void *) (long) client_socket);
             client[i]= (int) client_socket;
@@ -120,19 +118,15 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in client2_address; // used by "accept" to store the client's address
     int client2_socket = 0;
     socklen_t client_address_len = sizeof(struct sockaddr_in); // len of a client address
-
     while (1) {
-
         *//*
          * Clients id sending
          *//*
-
         if (client1_socket == 0) {
             // client 1 is not connected
             printf("En attente de connexion du client 1...\n");
             client1_socket = accept(server_socket, (struct sockaddr*) &client1_address, &client_address_len);
             printf("Le client 1 est connecté.\n");
-
             // sends the client 1 id
             int client1_id = 1;
             send(client1_socket, &client1_id, sizeof(int), 0);
@@ -143,18 +137,14 @@ int main(int argc, char *argv[]) {
             printf("En attente de connexion du client 2...\n");
             client2_socket = accept(server_socket, (struct sockaddr*) &client2_address, &client_address_len);
             printf("Le client 2 est connecté.\n");
-
             // sends the client 2 id
             int client2_id = 2;
             send(client2_socket, &client2_id, sizeof(int), 0);
             printf("ID: %d envoyé au client 2.\n", client2_id);
         }
-
-
         *//*
          * Communication between clients
          *//*
-
         int recv1_res = recv(client1_socket, buffer, MAX_SIZE, 0);
         check_error(recv1_res, "Erreur lors de la réception du message du client 1.\n");
         if (recv1_res == 0 || strcmp(buffer, END_WORD) == 0) {
@@ -165,10 +155,8 @@ int main(int argc, char *argv[]) {
             continue; // goes at the top of the loop
         }
         printf("Reçu du client 1 : %s", buffer);
-
         send(client2_socket, buffer, MAX_SIZE, 0);
         printf("Envoyé au client 2 : %s", buffer);
-
         int recv2_res = recv(client2_socket, buffer, MAX_SIZE, 0);
         check_error(recv2_res, "Erreur lors de la réception du message du client 2.\n");
         if (recv2_res == 0 || strcmp(buffer, END_WORD) == 0) {
@@ -179,9 +167,7 @@ int main(int argc, char *argv[]) {
             continue; // goes at the top of the loop
         }
         printf("Reçu du client 2 : %s", buffer);
-
         send(client1_socket, buffer, MAX_SIZE, 0);
         printf("Envoyé au client 1 : %s", buffer);
     }*/
 }
-
