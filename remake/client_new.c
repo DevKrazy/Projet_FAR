@@ -7,7 +7,6 @@
 #include "utils.h"
 
 //pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
-int client[MAX_CLIENTS]; // list of connected clients
 pthread_t thread[1];
 
 void *send_thread(void *socket) {

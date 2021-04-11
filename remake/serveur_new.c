@@ -18,7 +18,10 @@ void *send_thread(void *socket) {
     char send_buffer[MAX_SIZE];
     int client_socket = (int) (long) socket;
     while (1) {
-        recv(client_socket, send_buffer, MAX_SIZE, 0);
+        int recv_res = recv(client_socket, send_buffer, MAX_SIZE, 0);
+        if (recv_res == 0) {
+            // TODO libérer l'espace du client
+        }
         printf("Reçu : %s", send_buffer);
         for (int j = 0; j < MAX_CLIENTS; j++) {
             printf("client j : %d\n",client[j]);
@@ -30,7 +33,6 @@ void *send_thread(void *socket) {
             }
         }
     }
-    close(client_socket);
 }
 
 int main(int argc, char *argv[]) {
