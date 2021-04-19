@@ -59,7 +59,9 @@ int main(int argc, char *argv[]) {
     printf("En attente...\n");
     int connect_res = connect(server_socket, (struct sockaddr*) &server_address, server_address_len); // opens the socket with the configured address
     check_error(connect_res, "Erreur lors de la connexion au serveur.\n");
-    printf("Connexion au serveur réussie !\n");
+    char msgServeur[MAX_SIZE];
+    recv(server_socket, msgServeur, MAX_SIZE, 0);
+     printf("%s\n",msgServeur );
 
     //send pseudo to server
     //printf("Entrez votre pseudo :")
