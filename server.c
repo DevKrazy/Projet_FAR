@@ -9,6 +9,12 @@
 #include "utils.h"
 
 
+// fonction pour send un message avec le pseudo 
+// fonction pour recv un emssage avec le pseudo
+// fonction pour récup un client à partir de son socket
+// 
+
+
 //int clients[MAX_CLIENTS]; // list of connected clients
 pthread_t thread[MAX_THREADS];
 sem_t semaphore;
@@ -123,6 +129,8 @@ int main(int argc, char *argv[]) {
       check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
 
       int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+      send(client_socket, "Connexion acceptée\n", MAX_SIZE, 0);
+
 
       // met la socket client dans le tableau au premier 0 disponible
       for (int k = 0; k < MAX_CLIENTS; k++) {
