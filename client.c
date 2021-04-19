@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include "headers/utils.h"
+#include <sys/sem.h>
+#include "utils.h"
 
 //pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int clients[MAX_CLIENTS]; // list of connected clients
@@ -13,6 +14,7 @@ pthread_t thread[1];
 void *send_thread(void *socket) {
     char send_buffer[MAX_SIZE];
     int server_socket = (int) (long) socket;
+    printf("Entrez votre pseudo(max 10 lettres) : ");
     while (1) {
         //printf("Entrez votre message: ");
         //pthread_mutex_lock(&mutex);
@@ -54,10 +56,16 @@ int main(int argc, char *argv[]) {
 
     // connection to the server
     socklen_t server_address_len = sizeof(struct sockaddr_in);
-    printf("Before connect\n");
+    printf("En attente...\n");
     int connect_res = connect(server_socket, (struct sockaddr*) &server_address, server_address_len); // opens the socket with the configured address
     check_error(connect_res, "Erreur lors de la connexion au serveur.\n");
     printf("Connexion au serveur réussie !\n");
+
+    //send pseudo to server
+    //printf("Entrez votre pseudo :")
+    //char send_pseudo[MAX_SIZE];
+    //fgets(send_pseudo, MAX_SIZE, stdin);
+    //send(server_socket, send_pseudo, MAX_SIZE, 0);
 
     // send thread start
     pthread_create(&thread[0], NULL, send_thread, (void *) (long) server_socket);
