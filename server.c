@@ -5,46 +5,66 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "headers/utils.h"
+#include <semaphore.h>
+#include "utils.h"
 
-//pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
-int clients[MAX_CLIENTS]; // list of connected clients
+
+//int clients[MAX_CLIENTS]; // list of connected clients
 pthread_t thread[MAX_THREADS];
+sem_t semaphore;
 int client_index;
+char clients_pseudo[MAX_CLIENTS];
 
-// TODO: faire une fonction send et recv qui envoie et recoivent le nb d'octets à transférer
 // TODO: gérer le mutex
+struct Client {
+  int client_socket;
+  char pseudo[10];
+};
+
+struct Client clients[MAX_CLIENTS]; 
 
 void *send_thread(void *socket) {
     printf("Thread clients créé !\n");
     char send_buffer[MAX_SIZE];
     int client_socket = (int) (long) socket;
+    
+    // ajout du pseudo 
+    recv(client_socket, send_buffer, MAX_SIZE, 0);
+    for(int i = 0; i<MAX_CLIENTS; i++){
+      if (clients[i].client_socket == client_socket){
+        strcpy(clients[i].pseudo, send_buffer);
+        printf("pseudo enregistré : %s\n", clients[i].pseudo);
+        }
+    }
+    
+    
     while (1) {
         int recv_res = recv(client_socket, send_buffer, MAX_SIZE, 0);
-        if (recv_res == 0 || strcmp(send_buffer, "fin\n") == 0) {
+        if (recv_res == 0 || strcmp(send_buffer, "fin\n") == 0) { // if the client stopped the discussion
             for (int l = 0; l < MAX_CLIENTS; l++) {
 
                 // frees the clients array from the clients who disconnected
-                if (client_socket == clients[l]) {
-                    clients[l] = 0; // clients reset
-                    client_index-=1;
-                    shutdown(client_socket,2);
-                    close(client_socket);
+                if (client_socket == clients[l].client_socket) {
+                  // TODO : modifier la structure
+                    clients[l].client_socket = 0; // clients reset
+                    client_index -= 1;
+                    sem_post(&semaphore);
+                    shutdown(client_socket, 2);
                     pthread_exit(0);
                 }
             }
         }
         printf("Reçu : %s", send_buffer);
-        for (int j = 0; j < MAX_CLIENTS; j++) {
-            printf("clients j : %d\n", clients[j]);
-            if (clients[j] != client_socket && clients[j] != 0) {
-                send(clients[j], send_buffer, MAX_SIZE, 0); // modifié le j en clients[j]
+        for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
+            printf("clients j : %d\n", clients[j].client_socket);
+            if (clients[j].client_socket != client_socket && clients[j].client_socket != 0) { // envoi 
+                send(clients[j].client_socket, send_buffer, MAX_SIZE, 0); // modifié le j en clients[j]
                 printf("Envoyé au clients : %s", send_buffer);
             } else {
                 printf("On n'envoie pas\n");
             }
         }
-    }
+    } 
 }
 
 int main(int argc, char *argv[]) {
@@ -58,6 +78,9 @@ int main(int argc, char *argv[]) {
         printf("Lancement du serveur...\n");
     }
 
+    // sem init
+    sem_init(&semaphore, PTHREAD_PROCESS_SHARED, MAX_CLIENTS);
+    // TODO: check return value
 
     /*
      * Server socket setup
@@ -85,34 +108,35 @@ int main(int argc, char *argv[]) {
     printf("Le serveur écoute sur le port %s.\n", argv[1]);
 
     client_index = 0;
+    int sem_value;
 
     while (1) {
-        // clients address initialization
-        struct sockaddr_in client_address;
-        socklen_t client_address_len = sizeof(struct sockaddr_in);
+      // clients address initialization
+      struct sockaddr_in client_address;
+      socklen_t client_address_len = sizeof(struct sockaddr_in);
+     
+      // accept
+      sem_getvalue(&semaphore,&sem_value);
+      printf("Before : sem_value: %d\n",sem_value);
 
-        // accept
-        if (client_index==MAX_CLIENTS){
-            printf("Nombre de clients maximum atteint !\n");
-            int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
-            send(client_socket, "trop de clients aurevoir", MAX_SIZE, 0);
-            shutdown(client_socket, 2) ;
+      int sem_wait_res = sem_wait(&semaphore); // decrements the sem, waits if it is 0
+      check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
 
+      int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+
+      // met la socket client dans le tableau au premier 0 disponible
+      for (int k = 0; k < MAX_CLIENTS; k++) {
+        if (clients[k].client_socket == 0) { // 0 means clients not connected
+            clients[k].client_socket = client_socket;
+            break;
+          }
+      }   
+
+      // creation du thread client
+      if (client_socket != -1) {
+             pthread_create(&thread[client_index], NULL, send_thread, (void *) (long) client_socket);
+             client_index+=1;
+             printf("Un clients connecté de plus ! %d clients \n", client_index);
         }
-        else{
-            for (int k = 0; k < MAX_CLIENTS; k++) {
-                if (clients[k] == 0) { // 0 means clients not connected
-                    int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
-                    if (client_socket != -1){
-                        pthread_create(&thread[client_index], NULL, send_thread, (void *) (long) client_socket);
-                        clients[client_index]= (int) client_socket;
-                        client_index+=1;
-                        printf("Un clients connecté de plus ! %d clients \n", client_index);
-                    }
-                    // break;
-                }
-            }
-        }
-
-    }
+  }
 }
