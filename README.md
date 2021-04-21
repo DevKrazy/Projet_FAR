@@ -1,5 +1,5 @@
-# Projet FAR (matière Fondamentaux des Applications Réparties)
+# Chat programm
 
-Système de chat textuel avec un serveur et possibilité de connecter plusieurs clients.
+A simple chat programm where you can have multiple clients connected to one server. You can send private and public messages.
 
-*Projet FAR réalisé en IG3 à Polytech Montpellier*
+*Realised in the context of the C project at Polytech Montpellier*
