@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
         char recv_buffer[MAX_MSG_SIZE];
         //printf("Attente d'un message du serveur...\n");
         int recv_res = recv(server_socket, recv_buffer, MAX_MSG_SIZE, 0);
-        printf("[Serveur] : %s", recv_buffer);
+        printf("[Serveur] : %s\n", recv_buffer);
         if (recv_res == 0) {
             terminate_program(0);
         }

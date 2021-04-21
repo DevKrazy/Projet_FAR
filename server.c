@@ -18,6 +18,7 @@ pthread_t thread[MAX_THREADS];
 sem_t semaphore;
 Client clients[MAX_CLIENTS];
 
+
 void *client_thread(void *socket) {
     printf("Thread clients créé !\n");
     char send_buffer[MAX_MSG_SIZE];
@@ -40,17 +41,25 @@ void *client_thread(void *socket) {
             pthread_exit(0);
         }
 
+        //send message
+        if (is_private_message(send_buffer, clients)==1) {
+            printf("on a detecte un message privé (dans server)\n");
+            send_message_to(send_buffer,clients);
+        } else {
+            broadcast_message(send_buffer, clients, client_index);
+        }
+
         // Broadcast the message
-        printf("[%s](%d): %s", clients[client_index].pseudo, client_index, send_buffer);
+        /*printf("[%s](%d): %s", clients[client_index].pseudo, client_index, send_buffer);
         for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
-            printf("Client %d : %d\n", j,  clients[j].client_socket);
+            printf("clients %d : %d\n", j,  clients[j].client_socket);
             if (clients[j].client_socket != client_socket && clients[j].client_socket != 0) { // envoi
                 send(clients[j].client_socket, send_buffer, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
-                printf("Envoyé au client : %s", send_buffer);
+                printf("Envoyé au clients : %s", send_buffer);
             } else {
                 printf("On n'envoie pas\n");
             }
-        }
+        }*/
     }
 }
 
