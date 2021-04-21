@@ -3,75 +3,57 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include "utils.h"
-
-
-// fonction pour send un message avec le pseudo 
-// fonction pour recv un emssage avec le pseudo
-// fonction pour récup un client à partir de son socket
-// 
-
-
-//int clients[MAX_CLIENTS]; // list of connected clients
-pthread_t thread[MAX_THREADS];
-sem_t semaphore;
-int client_index;
-char clients_pseudo[MAX_CLIENTS];
+#include "utils/headers/utils.h"
+#include "utils/headers/server_utils.h"
 
 // TODO: gérer le mutex
-struct Client {
-  int client_socket;
-  char pseudo[10];
-};
+// TODO: intégrer ces fonctions
+// fonction pour send un message avec le pseudo
+// fonction pour recv un message avec le pseudo
+// fonction pour broadcast un message
 
-struct Client clients[MAX_CLIENTS]; 
+pthread_t thread[MAX_THREADS];
+sem_t semaphore;
+Client clients[MAX_CLIENTS];
 
-void *send_thread(void *socket) {
+void *client_thread(void *socket) {
     printf("Thread clients créé !\n");
-    char send_buffer[MAX_SIZE];
+    char send_buffer[MAX_MSG_SIZE];
     int client_socket = (int) (long) socket;
-    
-    // ajout du pseudo 
-    recv(client_socket, send_buffer, MAX_SIZE, 0);
-    for(int i = 0; i<MAX_CLIENTS; i++){
-      if (clients[i].client_socket == client_socket){
-        strcpy(clients[i].pseudo, send_buffer);
-        printf("pseudo enregistré : %s\n", clients[i].pseudo);
-        }
-    }
-    
-    
-    while (1) {
-        int recv_res = recv(client_socket, send_buffer, MAX_SIZE, 0);
-        if (recv_res == 0 || strcmp(send_buffer, "fin\n") == 0) { // if the client stopped the discussion
-            for (int l = 0; l < MAX_CLIENTS; l++) {
+    int client_index = get_index_by_socket(clients, client_socket);
 
-                // frees the clients array from the clients who disconnected
-                if (client_socket == clients[l].client_socket) {
-                  // TODO : modifier la structure
-                    clients[l].client_socket = 0; // clients reset
-                    client_index -= 1;
-                    sem_post(&semaphore);
-                    shutdown(client_socket, 2);
-                    pthread_exit(0);
-                }
-            }
+    // ajout du pseudo
+    recv(client_socket, send_buffer, MAX_MSG_SIZE, 0);
+    strcpy(clients[client_index].pseudo, send_buffer);
+
+    while (1) {
+        int recv_res = recv(client_socket, send_buffer, MAX_MSG_SIZE, 0);
+        //check_error(-1, "Erreur lors de la réception du message du client.\n");
+
+        // Checks if the client closed the discussion or the program
+        if (recv_res == 0 || strcmp(send_buffer, "fin\n") == 0) {
+            clients[client_index].client_socket = 0; // client_socket reset
+            sem_post(&semaphore);
+            shutdown(client_socket, 2);
+            pthread_exit(0);
         }
-        printf("Reçu : %s", send_buffer);
+
+        // Broadcast the message
+        printf("[%s](%d): %s", clients[client_index].pseudo, client_index, send_buffer);
         for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
-            printf("clients j : %d\n", clients[j].client_socket);
-            if (clients[j].client_socket != client_socket && clients[j].client_socket != 0) { // envoi 
-                send(clients[j].client_socket, send_buffer, MAX_SIZE, 0); // modifié le j en clients[j]
-                printf("Envoyé au clients : %s", send_buffer);
+            printf("Client %d : %d\n", j,  clients[j].client_socket);
+            if (clients[j].client_socket != client_socket && clients[j].client_socket != 0) { // envoi
+                send(clients[j].client_socket, send_buffer, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
+                printf("Envoyé au client : %s", send_buffer);
             } else {
                 printf("On n'envoie pas\n");
             }
         }
-    } 
+    }
 }
+
 
 int main(int argc, char *argv[]) {
 
@@ -86,7 +68,7 @@ int main(int argc, char *argv[]) {
 
     // sem init
     sem_init(&semaphore, PTHREAD_PROCESS_SHARED, MAX_CLIENTS);
-    // TODO: check return value
+    //check_error(-1, "Erreur lors de l'initialisation du semaphore.\n");
 
     /*
      * Server socket setup
@@ -113,38 +95,37 @@ int main(int argc, char *argv[]) {
     check_error(listen_res, "Erreur lors du listen\n");
     printf("Le serveur écoute sur le port %s.\n", argv[1]);
 
-    client_index = 0;
     int sem_value;
 
     while (1) {
-      // clients address initialization
-      struct sockaddr_in client_address;
-      socklen_t client_address_len = sizeof(struct sockaddr_in);
-     
-      // accept
-      sem_getvalue(&semaphore,&sem_value);
-      printf("Before : sem_value: %d\n",sem_value);
+        // clients address initialization
+        struct sockaddr_in client_address;
+        socklen_t client_address_len = sizeof(struct sockaddr_in);
 
-      int sem_wait_res = sem_wait(&semaphore); // decrements the sem, waits if it is 0
-      check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
+        // accept
+        sem_getvalue(&semaphore, &sem_value);
+        printf("sem_value: %d\n",sem_value);
 
-      int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
-      send(client_socket, "Connexion acceptée\n", MAX_SIZE, 0);
+        int sem_wait_res = sem_wait(&semaphore); // decrements the sem, waits if it is 0
+        check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
+
+        int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+        send(client_socket, "Connexion acceptée\n", MAX_MSG_SIZE, 0);
 
 
-      // met la socket client dans le tableau au premier 0 disponible
-      for (int k = 0; k < MAX_CLIENTS; k++) {
-        if (clients[k].client_socket == 0) { // 0 means clients not connected
-            clients[k].client_socket = client_socket;
-            break;
-          }
-      }   
-
-      // creation du thread client
-      if (client_socket != -1) {
-             pthread_create(&thread[client_index], NULL, send_thread, (void *) (long) client_socket);
-             client_index+=1;
-             printf("Un clients connecté de plus ! %d clients \n", client_index);
+        // met la socket client dans le tableau au premier 0 disponible
+        for (int k = 0; k < MAX_CLIENTS; k++) {
+            if (clients[k].client_socket == 0) { // 0 means clients not connected
+                clients[k].client_socket = client_socket;
+                break;
+            }
         }
-  }
+
+        // creation du thread client
+        if (client_socket != -1) {
+            int count = get_client_count(semaphore);
+            pthread_create(&thread[count], NULL, client_thread, (void *) (long) client_socket);
+            printf("Un clients connecté de plus ! %d clients \n", count);
+        }
+    }
 }

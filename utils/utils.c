@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "headers/utils.h"
 
 /**
  * Checks a given variable value and prints an error message if the variable value is -1.
@@ -23,13 +22,3 @@ void terminate_program(int code) {
     exit(code);
 }
 
-/**
- * Prints a message using a red color.
- * Current limitation: cannot print variables inside the message.
- * @param message the message to print
- */
-void printf_red(char *message) {
-    printf("\033[0;31m"); // red
-    printf("%s", message);
-    printf("\033[0m"); // white
-}
