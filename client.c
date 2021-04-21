@@ -9,26 +9,26 @@
 
 //pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int clients[MAX_CLIENTS]; // list of connected clients
-pthread_t thread[1];
+pthread_t thread;
 
-void *client_thread(void *socket) {
+void *client_message_thread(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
     int server_socket = (int) (long) socket;
+
+    // gets and sends the client's name to the server
     printf("Entrez votre pseudo(max 10 lettres) : ");
     fgets(send_buffer, MAX_MSG_SIZE, stdin);
-    send_buffer[strcspn(send_buffer, "\n")] = 0;
+    send_buffer[strcspn(send_buffer, "\n")] = 0; // removes the \n at the end
     send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
     printf("Bienvenue %s !\n", send_buffer);
 
     while (1) {
-        //printf("Entrez votre message: ");
         //pthread_mutex_lock(&mutex);
         fgets(send_buffer, MAX_MSG_SIZE, stdin);
         send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
         printf("[Vous] : %s", send_buffer);
         //pthread_mutex_unlock(&mutex);
     }
-
 }
 
 int main(int argc, char *argv[]) {
@@ -68,14 +68,9 @@ int main(int argc, char *argv[]) {
     recv(server_socket, msgServeur, MAX_MSG_SIZE, 0);
     printf("%s",msgServeur );
 
-    //send pseudo to server
-    //printf("Entrez votre pseudo :")
-    //char send_pseudo[MAX_MSG_SIZE];
-    //fgets(send_pseudo, MAX_MSG_SIZE, stdin);
-    //send(server_socket, send_pseudo, MAX_MSG_SIZE, 0);
 
     // send thread start
-    pthread_create(&thread[0], NULL, client_thread, (void *) (long) server_socket);
+    pthread_create(&thread, NULL, client_message_thread, (void *) (long) server_socket);
 
     while (1) {
 

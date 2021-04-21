@@ -83,6 +83,8 @@ void send_message_to(char *msg, Client clients[]) {
  * @return 1 if the message is a private message; 0 otherwise
  */
 int is_private_message(char *msg, Client clients[]) {
+    //char *msg_copy;
+    //strcpy(msg_copy, msg);
     char *name = strtok(msg, " "); // extracts the name from the message
     if (get_socket_by_name(clients, name) > 0) {
         // a socket was found for the client, so he exists in the clients array
@@ -105,7 +107,7 @@ void broadcast_message (char *msg, Client clients[], int from_client_index) {
         printf("clients %d : %d\n", j,  clients[j].client_socket);
         if (clients[j].client_socket != client_socket && clients[j].client_socket != 0) { // envoi
             send(clients[j].client_socket, msg, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
-            printf("Envoyé au clients : %s", msg);
+            printf("Envoyé au clients : %s\n", msg);
         } else {
             printf("On n'envoie pas\n");
         }

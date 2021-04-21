@@ -8,10 +8,12 @@
 #define MAX_THREADS 10
 #define MAX_CLIENTS 3
 
+
 typedef struct Client Client;
 struct Client {
     int client_socket;
     char pseudo[MAX_NAME_SIZE];
+    pthread_t msg_thread;
 };
 
 /**
@@ -71,3 +73,5 @@ int is_private_message(char *msg, Client clients[]);
  * @return 1 if the message is a private message; 0 otherwise
  */
 void broadcast_message (char *msg, Client clients[], int from_client_index);
+
+void register_client(Client clients[], int client_socket, void * thread_function);
