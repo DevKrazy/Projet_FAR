@@ -10,14 +10,11 @@
 #include "utils/headers/server_utils.h"
 
 // TODO: gérer le mutex
-// TODO: corriger le broadcast (il envoie que le premier mot)
-//  (surement à cause du strtok et du fait que les tableaux soient passés par référence)
 // TODO: corriger le fait qu'on puisse s'envoyer un message privé à soi même
 // TODO: quand on reçoit un mp : remplacer "server" par le pseudo
 // TODO: utiliser des puts plutot que des printf
 // TODO: corriger le print du port
 
-pthread_t thread[MAX_THREADS];
 sem_t semaphore;
 Client clients[MAX_CLIENTS];
 
