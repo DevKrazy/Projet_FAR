@@ -9,11 +9,14 @@
 
 pthread_t msg_thread;
 
+pthread_t file_thread;
+sem_t file_semaphore;
+
 /**
  * The client's messaging thread.
  * @param socket the server's socket
  */
-void *messaging_thread(void *socket) {
+void* messaging_thread(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
     int server_socket = (int) (long) socket;
 
@@ -26,8 +29,29 @@ void *messaging_thread(void *socket) {
 
     while (1) {
         fgets(send_buffer, MAX_MSG_SIZE, stdin);
+
+        // if is file
+            // recup liste des fichiers du répertoire
+            // affichier liste des fichiers (ou demander un index)
+            // demander nom fichier (dans variable globale)
+                // si fichier existe dans la liste (faire fonction)
+                    // sem_post
+                    // print "envoi du fichier"
+                // sinon
+                    // print "fichier invalide"
+
         send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
         printf("[Vous] : %s", send_buffer);
+    }
+}
+
+void* file_sending_thread(void *socket) {
+    while (1) {
+        sem_wait(&file_semaphore);
+        // sem_wait
+        // connect
+        // send file
+        // shutdown
     }
 }
 
@@ -45,7 +69,7 @@ int configure_server_socket(char* address, char* port, int* socket_return, struc
     // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (server_socket == -1) {
-        printf("Erreur lors de la création de la socket serveur pour les messages.\n");
+        perror("Erreur lors de la création de la socket serveur pour les messages.\n");
         return -1;
     }
     printf("Socket serveur créée avec succès.\n");
@@ -73,7 +97,7 @@ int connect_on(int socket, struct sockaddr_in address) {
     socklen_t server_address_len = sizeof(struct sockaddr_in);
     int connect_res = connect(socket, (struct sockaddr*) &address, server_address_len); // opens the socket with the configured address
     if (connect_res == -1) {
-        printf("Erreur lors de la connexion au serveur.\n");
+        perror("Erreur lors de la connexion au serveur.\n");
         return -1;
     }
     printf("En attente de l'acceptation du serveur...\n");
@@ -83,19 +107,26 @@ int connect_on(int socket, struct sockaddr_in address) {
 int main(int argc, char *argv[]) {
 
     // checks for the correct args number
-    if (argc != 3) {
+    if (argc != 4) {
         printf("Nombre d'arguments incorrect. Utilisation :\n");
-        printf("%s <adresse_ip_serveur> <num_port>\n", argv[0]);
+        printf("%s <adresse_ip_serveur> <port_msg> <port_fichier>\n", argv[0]);
         exit(0);
     } else {
         printf("Lancement du client...\n");
     }
 
-    // configures the server's socket and connects to it
+    // configures the server's message sending socket and connects to it
     int server_msg_socket;
     struct sockaddr_in server_msg_address;
     configure_server_socket(argv[1], argv[2], &server_msg_socket, &server_msg_address);
     connect_on(server_msg_socket, server_msg_address);
+
+    // configures the server's file sending socket and connects to it
+    int server_file_socket;
+    struct sockaddr_in server_file_address;
+    configure_server_socket(argv[1], argv[3], &server_file_socket, &server_file_address);
+    connect_on(server_file_socket, server_file_address);
+
 
     // receives the connection confirmation message from the server
     char recv_buffer[MAX_MSG_SIZE];
@@ -104,6 +135,11 @@ int main(int argc, char *argv[]) {
 
     // starts the messaging thread
     pthread_create(&msg_thread, NULL, messaging_thread, (void *) (long) server_msg_socket);
+
+    // starts the file sending thread
+    pthread_create(&file_thread, NULL, file_sending_thread, (void *) (long) server_file_socket);
+    sem_init(&file_semaphore, PTHREAD_PROCESS_SHARED, 0);
+
 
     while (1) {
         int recv_res = recv(server_msg_socket, recv_buffer, MAX_MSG_SIZE, 0);

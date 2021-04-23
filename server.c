@@ -11,6 +11,7 @@
 // TODO: quand on reçoit un mp : remplacer "server" par le pseudo
 // TODO: utiliser des puts plutot que des printf
 // TODO: corriger le print du port
+// TODO: corriger le retour a la ligne en trop quand on reçoit un message (ça vient du strtok surement)
 
 sem_t semaphore;
 Client clients[MAX_CLIENTS];
@@ -43,7 +44,7 @@ void *messaging_thread(void *socket) {
         }
 
         //send message
-        if (is_private_message(send_buffer, clients)==1) {
+        if (is_private_message(send_buffer, clients) == 1) {
             send_message_to(send_buffer,clients);
         } else {
             broadcast_message(send_buffer, clients, client_index);
@@ -64,7 +65,7 @@ int configure_server_socket(char* port, int* socket_return, struct sockaddr_in *
     // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (server_socket == -1) {
-        printf("Erreur lors de la création de la socket serveur pour les messages.\n");
+        perror("Erreur lors de la création de la socket serveur pour les messages.\n");
         return -1;
     }
     printf("Socket serveur créée avec succès.\n");
@@ -92,7 +93,7 @@ int bind_and_listen_on(int socket, struct sockaddr_in address) {
     // bind
     int bind_res = bind(socket, (struct sockaddr*) &address, sizeof(address)); // binds address to server socket
     if (bind_res == -1) {
-        printf("Erreur lors du bind\\n");
+        perror("Erreur lors du bind\\n");
         return -1;
     }
     printf("Bind réussi !\n");
@@ -100,7 +101,7 @@ int bind_and_listen_on(int socket, struct sockaddr_in address) {
     // listen
     int listen_res = listen(socket, MAX_CLIENTS); // listens for incoming connections (maximum 2 waiting connections)
     if (listen_res == -1) {
-        printf("Erreur lors du listen\\n");
+        perror("Erreur lors du listen\\n");
         return -1;
     }
     printf("Le serveur écoute !\n");
