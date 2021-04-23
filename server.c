@@ -5,7 +5,6 @@
 #include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <inttypes.h> // to print types such as in_port_t (which is a uint16_t)
 #include "utils/headers/utils.h"
 #include "utils/headers/server_utils.h"
 
@@ -16,6 +15,11 @@
 sem_t semaphore;
 Client clients[MAX_CLIENTS];
 
+/**
+ * The server's messaging thread.
+ * @param socket the server's socket
+ * @return
+ */
 void *messaging_thread(void *socket) {
     printf("Thread clients créé !\n");
     char send_buffer[MAX_MSG_SIZE];
@@ -48,9 +52,12 @@ void *messaging_thread(void *socket) {
 }
 
 /**
- * Configures the server's socket and returns it.
- * @param port the listening port
- * @return the server socket
+ * Configures the server's socket and updates the socket_return and addr_return values with the
+ * created socket and the created address.
+ * @param port the port we want to use
+ * @param socket_return the pointer where the created socket will be stored at
+ * @param addr_return the address where the created sockaddr_in will be stored at
+ * @return 0 if everything was successful; -1 if there was an error during socket creation
  */
 int configure_server_socket(char* port, int* socket_return, struct sockaddr_in *addr_return) {
 
@@ -67,7 +74,7 @@ int configure_server_socket(char* port, int* socket_return, struct sockaddr_in *
     server_address.sin_family = AF_INET; // address type
     server_address.sin_addr.s_addr = INADDR_ANY;
     server_address.sin_port = htons(atoi(port)); // address port (converted from the CLI)
-    printf("Adresse du serveyr configurée avec succès !");
+    printf("Adresse du serveur configurée avec succès ! (port : %s)\n", port);
 
     *socket_return = server_socket;
     *addr_return = server_address;
@@ -75,16 +82,29 @@ int configure_server_socket(char* port, int* socket_return, struct sockaddr_in *
     return 0;
 }
 
+/**
+ * Binds the given sockaddr_in to the given socket.
+ * @param socket the socket we want to bind the address to
+ * @param address the address we want to bind
+ * @return 0 if successful; -1 if bind or listen failed (with errno positioned)
+ */
 int bind_and_listen_on(int socket, struct sockaddr_in address) {
     // bind
     int bind_res = bind(socket, (struct sockaddr*) &address, sizeof(address)); // binds address to server socket
-    check_error(bind_res, "Erreur lors du bind\n");
+    if (bind_res == -1) {
+        printf("Erreur lors du bind\\n");
+        return -1;
+    }
     printf("Bind réussi !\n");
 
     // listen
     int listen_res = listen(socket, MAX_CLIENTS); // listens for incoming connections (maximum 2 waiting connections)
-    check_error(listen_res, "Erreur lors du listen\n");
-    printf("Le serveur écoute sur le port %d\n", (int) address.sin_port);
+    if (listen_res == -1) {
+        printf("Erreur lors du listen\\n");
+        return -1;
+    }
+    printf("Le serveur écoute !\n");
+    return 0;
 }
 
 

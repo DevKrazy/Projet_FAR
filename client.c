@@ -11,7 +11,7 @@ pthread_t msg_thread;
 
 /**
  * The client's messaging thread.
- * @param socket the server socket
+ * @param socket the server's socket
  */
 void *messaging_thread(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
@@ -55,7 +55,7 @@ int configure_server_socket(char* address, char* port, int* socket_return, struc
     server_address.sin_family = AF_INET; // address type
     inet_pton(AF_INET, address, &(server_address.sin_addr)); //converts the address from the CLI to the correct format
     server_address.sin_port = htons(atoi(port)); // address port (converted from the CLI)
-    printf("Adresse du serveur configurée avec succès !\n");
+    printf("Adresse du serveur configurée avec succès ! (%s:%s)\n", address, port);
 
     *socket_return = server_socket;
     *addr_return = server_address;
