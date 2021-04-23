@@ -9,8 +9,6 @@
 #include "utils/headers/utils.h"
 #include "utils/headers/server_utils.h"
 
-// TODO: gérer le mutex
-// TODO: corriger le fait qu'on puisse s'envoyer un message privé à soi même
 // TODO: quand on reçoit un mp : remplacer "server" par le pseudo
 // TODO: utiliser des puts plutot que des printf
 // TODO: corriger le print du port
@@ -18,7 +16,7 @@
 sem_t semaphore;
 Client clients[MAX_CLIENTS];
 
-void *client_message_thread(void *socket) {
+void *messaging_thread(void *socket) {
     printf("Thread clients créé !\n");
     char send_buffer[MAX_MSG_SIZE];
     int client_socket = (int) (long) socket;
@@ -50,11 +48,11 @@ void *client_message_thread(void *socket) {
 }
 
 /**
- * Configures the server and returns the server's socket.
+ * Configures the server's socket and returns it.
  * @param port the listening port
  * @return the server socket
  */
-int configure_server(in_port_t port) {
+int configure_server_socket(int port) {
 
     // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -65,7 +63,7 @@ int configure_server(in_port_t port) {
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET; // address type
     server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = port; // address port (converted from the CLI)
+    server_address.sin_port = htons(port); // address port (converted from the CLI)
     //server_address.sin_port = htons(atoi(argv[1])); // address port (converted from the CLI)
 
     // bind
@@ -76,11 +74,12 @@ int configure_server(in_port_t port) {
     // listen
     int listen_res = listen(server_socket, MAX_CLIENTS); // listens for incoming connections (maximum 2 waiting connections)
     check_error(listen_res, "Erreur lors du listen\n");
-    printf("Le serveur écoute sur le port %" PRIu16 "\n", port);
+    printf("Le serveur écoute sur le port %d\n", port);
     //printf("Le serveur écoute sur le port %s.\n", argv[1]);
 
     return server_socket;
 }
+
 
 int main(int argc, char *argv[]) {
 
@@ -96,7 +95,8 @@ int main(int argc, char *argv[]) {
     // sem init
     sem_init(&semaphore, PTHREAD_PROCESS_SHARED, MAX_CLIENTS);
     //check_error(-1, "Erreur lors de l'initialisation du semaphore.\n");
-    int server_socket = configure_server(htons(atoi(argv[1])));
+    int server_socket = configure_server_socket(atoi(argv[1]));
+    int server_socket_file = configure_server_socket(atoi(argv[1]) + 1);
     int sem_value;
 
     while (1) {
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
             if (clients[k].client_socket == 0) {
                 // we found a client not connected
                 clients[k].client_socket = client_socket;
-                pthread_create(&clients[k].msg_thread, NULL, client_message_thread, (void *) (long) client_socket);
+                pthread_create(&clients[k].msg_thread, NULL, messaging_thread, (void *) (long) client_socket);
                 printf("Un clients connecté de plus ! %d client(s)\n", get_client_count(semaphore));
                 break;
             }

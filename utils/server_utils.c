@@ -83,13 +83,15 @@ void send_message_to(char *msg, Client clients[]) {
  * @return 1 if the message is a private message; 0 otherwise
  */
 int is_private_message(char *msg, Client clients[]) {
-    //char *msg_copy;
-    //strcpy(msg_copy, msg);
+    //printf("is_private_message : %s\n", msg);
+    char enregistrer[MAX_MSG_SIZE];
+    strcpy(enregistrer,msg);
     char *name = strtok(msg, " "); // extracts the name from the message
     if (get_socket_by_name(clients, name) > 0) {
         // a socket was found for the client, so he exists in the clients array
         return 1;
     } else {
+        strcpy(msg,enregistrer);
         return 0;
     }
 }
