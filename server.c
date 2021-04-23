@@ -52,32 +52,39 @@ void *messaging_thread(void *socket) {
  * @param port the listening port
  * @return the server socket
  */
-int configure_server_socket(int port) {
+int configure_server_socket(char* port, int* socket_return, struct sockaddr_in *addr_return) {
 
     // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
-    check_error(server_socket, "Erreur lors de la création de la socket serveur.\n");
+    if (server_socket == -1) {
+        printf("Erreur lors de la création de la socket serveur pour les messages.\n");
+        return -1;
+    }
     printf("Socket serveur créée avec succès.\n");
 
     // server address configuration
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET; // address type
     server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = htons(port); // address port (converted from the CLI)
-    //server_address.sin_port = htons(atoi(argv[1])); // address port (converted from the CLI)
+    server_address.sin_port = htons(atoi(port)); // address port (converted from the CLI)
+    printf("Adresse du serveyr configurée avec succès !");
 
+    *socket_return = server_socket;
+    *addr_return = server_address;
+
+    return 0;
+}
+
+int bind_and_listen_on(int socket, struct sockaddr_in address) {
     // bind
-    int bind_res = bind(server_socket, (struct sockaddr*) &server_address, sizeof(server_address)); // binds address to server socket
+    int bind_res = bind(socket, (struct sockaddr*) &address, sizeof(address)); // binds address to server socket
     check_error(bind_res, "Erreur lors du bind\n");
     printf("Bind réussi !\n");
 
     // listen
-    int listen_res = listen(server_socket, MAX_CLIENTS); // listens for incoming connections (maximum 2 waiting connections)
+    int listen_res = listen(socket, MAX_CLIENTS); // listens for incoming connections (maximum 2 waiting connections)
     check_error(listen_res, "Erreur lors du listen\n");
-    printf("Le serveur écoute sur le port %d\n", port);
-    //printf("Le serveur écoute sur le port %s.\n", argv[1]);
-
-    return server_socket;
+    printf("Le serveur écoute sur le port %d\n", (int) address.sin_port);
 }
 
 
@@ -92,11 +99,15 @@ int main(int argc, char *argv[]) {
         printf("Lancement du serveur...\n");
     }
 
-    // sem init
+    // semaphore initialisation
     sem_init(&semaphore, PTHREAD_PROCESS_SHARED, MAX_CLIENTS);
     //check_error(-1, "Erreur lors de l'initialisation du semaphore.\n");
-    int server_socket = configure_server_socket(atoi(argv[1]));
-    int server_socket_file = configure_server_socket(atoi(argv[1]) + 1);
+
+    int msg_socket;
+    struct sockaddr_in msg_address;
+    configure_server_socket(argv[1], &msg_socket, &msg_address);
+    bind_and_listen_on(msg_socket, msg_address);
+
     int sem_value;
 
     while (1) {
@@ -108,12 +119,11 @@ int main(int argc, char *argv[]) {
         int sem_wait_res = sem_wait(&semaphore); // decrements the semaphore, waits if it is 0
         check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
 
-        int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+        int client_socket = accept(msg_socket, (struct sockaddr *) &client_address, &client_address_len);
         check_error(client_socket, "Erreur lors de l'acceptation du client.\n");
         send(client_socket, "Connexion acceptée\n", MAX_MSG_SIZE, 0);
 
 
-        // puts
         for (int k = 0; k < MAX_CLIENTS; k++) {
             if (clients[k].client_socket == 0) {
                 // we found a client not connected

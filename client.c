@@ -40,12 +40,12 @@ void *messaging_thread(void *socket) {
   * @param addr_return the address where the created sockaddr_in will be stored at
   * @return 0 if everything was successful; -1 if there was an error during socket creation
   */
-int configure_server_socket(char* address, char* port, int* socket_return, struct sockaddr_in *addr_return ) {
+int configure_server_socket(char* address, char* port, int* socket_return, struct sockaddr_in *addr_return) {
 
     // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (server_socket == -1) {
-        printf("Erreur lors de la création de la socket serveur message.\n");
+        printf("Erreur lors de la création de la socket serveur pour les messages.\n");
         return -1;
     }
     printf("Socket serveur créée avec succès.\n");
@@ -91,26 +91,25 @@ int main(int argc, char *argv[]) {
         printf("Lancement du client...\n");
     }
 
+    // configures the server's socket and connects to it
     int server_msg_socket;
     struct sockaddr_in server_msg_address;
     configure_server_socket(argv[1], argv[2], &server_msg_socket, &server_msg_address);
     connect_on(server_msg_socket, server_msg_address);
 
     // receives the connection confirmation message from the server
-    char msgServeur[MAX_MSG_SIZE];
-    recv(server_msg_socket, msgServeur, MAX_MSG_SIZE, 0);
-    printf("%s",msgServeur );
+    char recv_buffer[MAX_MSG_SIZE];
+    recv(server_msg_socket, recv_buffer, MAX_MSG_SIZE, 0);
+    printf("%s",recv_buffer );
 
     // starts the messaging thread
     pthread_create(&msg_thread, NULL, messaging_thread, (void *) (long) server_msg_socket);
 
     while (1) {
-        // main process = messages reception
-        char recv_buffer[MAX_MSG_SIZE];
-        //printf("Attente d'un message du serveur...\n");
         int recv_res = recv(server_msg_socket, recv_buffer, MAX_MSG_SIZE, 0);
         printf("[Serveur] : %s\n", recv_buffer);
         if (recv_res == 0) {
+            // the server closed the connection
             terminate_program(0);
         }
     }

@@ -66,14 +66,17 @@ int get_name_by_socket(Client clients[], int socket, char buffer[MAX_NAME_SIZE])
 
 /**
  * Sends a private message to another client based on it's name. The name must be the
- * first word of the message. If the first word isn't a client name this function may cause problems.
+ * first word of the message. If the first word isn't a client name this function will alter the
+ * passed string.
  * @param msg the message to send (the first word must be the receiver's name)
  * @param clients the clients array
  */
 void send_message_to(char *msg, Client clients[]) {
     char *name = strtok(msg, " "); // extracts the name from the message
     int num_socket = get_socket_by_name(clients, name);
-    send(num_socket, msg + strlen(name) + 1, MAX_MSG_SIZE, 0); // increments the pointer to remove the name
+    if (num_socket > 0) {
+        send(num_socket, msg + strlen(name) + 1, MAX_MSG_SIZE, 0); // increments the pointer to remove the name
+    }
 }
 
 /**
@@ -83,15 +86,15 @@ void send_message_to(char *msg, Client clients[]) {
  * @return 1 if the message is a private message; 0 otherwise
  */
 int is_private_message(char *msg, Client clients[]) {
-    //printf("is_private_message : %s\n", msg);
-    char enregistrer[MAX_MSG_SIZE];
-    strcpy(enregistrer,msg);
+    char msg_copy[MAX_MSG_SIZE];
+    strcpy(msg_copy, msg);
     char *name = strtok(msg, " "); // extracts the name from the message
     if (get_socket_by_name(clients, name) > 0) {
-        // a socket was found for the client, so he exists in the clients array
+        // a socket was found for the client, so it exists in the clients array
         return 1;
     } else {
-        strcpy(msg,enregistrer);
+        // no socket was found, we resets the msg to its initial value
+        strcpy(msg, msg_copy);
         return 0;
     }
 }
