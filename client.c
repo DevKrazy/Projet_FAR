@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <dirent.h>
 #include "utils/headers/utils.h"
 #include "utils/headers/server_utils.h"
 
@@ -11,6 +12,40 @@ pthread_t msg_thread;
 
 pthread_t file_thread;
 sem_t file_semaphore;
+
+/**
+ * Lists the files of the current directory.
+ */
+void list_files() {
+
+    DIR* dir_stream; // directory stream
+    struct dirent* dir_entry;
+    dir_stream = opendir ("./");
+
+    if (dir_stream != NULL) {
+        dir_entry = readdir(dir_stream);
+        char** files = NULL;
+        int file_counter = 0;
+
+        printf("Voilà la liste de fichiers :\n");
+        while (dir_entry != NULL) { // readdir moves the dir_stream pointer forward
+            if(strcmp(dir_entry->d_name, ".") != 0 && strcmp(dir_entry->d_name, "..") != 0) {
+                // does not print the . and .. files
+                printf("Trying to allocate %lu \n", (file_counter + 1) * sizeof(*files));
+                files = realloc(files, (file_counter + 1) * sizeof(*files)); // reallocate memory for the newly found file
+                files[file_counter] = dir_entry->d_name; // adds the filename to the files array
+                printf(" - %s\n", files[file_counter]);
+                file_counter += 1;
+                //printf(" - %s\n", dir_entry->d_name);
+            }
+            dir_entry = readdir(dir_stream); // reads the next file from the directory stream
+        }
+        (void) closedir(dir_stream);
+    }
+    else {
+        perror ("Erreur lors de l'ouverture du répertoire.");
+    }
+}
 
 /**
  * The client's messaging thread.
@@ -30,6 +65,15 @@ void* messaging_thread(void *socket) {
     while (1) {
         fgets(send_buffer, MAX_MSG_SIZE, stdin);
 
+        if (strcmp(send_buffer, "file\n") == 0) {
+            // the client entered the "file" keyword
+            list_files();
+            printf("Choisissez un fichier\n");
+        } else {
+            send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
+            printf("[Vous] : %s", send_buffer);
+        }
+
         // if is file
             // recup liste des fichiers du répertoire
             // affichier liste des fichiers (ou demander un index)
@@ -39,9 +83,8 @@ void* messaging_thread(void *socket) {
                     // print "envoi du fichier"
                 // sinon
                     // print "fichier invalide"
-
-        send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
-        printf("[Vous] : %s", send_buffer);
+        // else
+            // on envoi le message reçu
     }
 }
 

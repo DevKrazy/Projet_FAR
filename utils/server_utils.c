@@ -109,7 +109,7 @@ void broadcast_message (char *msg, Client clients[], int from_client_index) {
     int client_socket = clients[from_client_index].client_socket;
     printf("[%s](%d): %s", clients[from_client_index].pseudo, from_client_index, msg);
     for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
-        printf("clients %d : %d\n", j,  clients[j].client_socket);
+        printf("client %d : %d\n", j,  clients[j].client_socket);
         if (clients[j].client_socket != client_socket && clients[j].client_socket != 0) { // envoi
             send(clients[j].client_socket, msg, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
             printf("Envoyé au clients : %s\n", msg);

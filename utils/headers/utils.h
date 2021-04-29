@@ -11,3 +11,15 @@ void check_error(int check, char *err_msg);
 void terminate_program(int code);
 
 void printf_red(char *message);
+
+int value_in_array(char* val, char** arr);
+
+/*
+ * CODE GIVEN BY THE PROFESSOR
+ */
+int get_last_tty();
+
+/*
+ * CODE GIVEN BY THE PROFESSOR
+ */
+FILE* new_tty();
