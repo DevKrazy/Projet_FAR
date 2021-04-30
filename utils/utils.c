@@ -35,6 +35,7 @@ void terminate_program(int code) {
  */
 int value_in_array(char* val, char** arr) {
     int i;
+    printf("%s", arr[0]);
     for(i = 0; i < sizeof(arr) / sizeof(arr[0]); i++) {
         if(strcmp(val, arr[i]) == 0) {
             return 1;

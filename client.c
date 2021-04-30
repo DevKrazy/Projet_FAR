@@ -12,6 +12,7 @@ pthread_t msg_thread;
 
 pthread_t file_thread;
 sem_t file_semaphore;
+char** files = NULL;
 
 /**
  * Lists the files of the current directory.
@@ -24,8 +25,8 @@ void list_files() {
 
     if (dir_stream != NULL) {
         dir_entry = readdir(dir_stream);
-        char** files = NULL;
         int file_counter = 0;
+        files = NULL;
 
         printf("Voilà la liste de fichiers :\n");
         while (dir_entry != NULL) { // readdir moves the dir_stream pointer forward
@@ -69,6 +70,18 @@ void* messaging_thread(void *socket) {
             // the client entered the "file" keyword
             list_files();
             printf("Choisissez un fichier\n");
+            char filename[1023];
+            scanf("%s", filename);
+            printf("%s", filename);
+
+            if (value_in_array(filename, files) == 1) { // CA NE FONCTIONNE PAS LE CHECK :'(
+                printf("Envoi du fichier %s au serveur.\n", filename);
+                // TODO: envoyer le fichier au serveur
+            } else {
+                printf("Le fichier %s n'existe pas...\n", filename);
+            }
+
+            free(files);
         } else {
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
             printf("[Vous] : %s", send_buffer);
