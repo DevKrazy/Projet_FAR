@@ -16,44 +16,44 @@ int clients[MAX_CLIENTS]; // list of connected clients
 pthread_t thread;
 char contenu_fichier[MAX_FILE_SIZE];
 
-void envoi_fichier(){
+void get_file_to_send() {
     FILE* fp1 = new_tty();
-          fprintf(fp1,"%s\n","Ce terminal sera utilisé uniquement pour l'affichage");
+    fprintf(fp1,"%s\n","Ce terminal sera utilisé uniquement pour l'affichage");
 
-          // Demander à l'utilisateur quel fichier afficher
-          DIR *dp;
-          struct dirent *ep;     
-          dp = opendir ("./");
-          if (dp != NULL) {
-            fprintf(fp1,"Voilà la liste de fichiers :\n");
-            while (ep = readdir (dp)) {
-              if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0) 
-            fprintf(fp1,"%s\n",ep->d_name);
-            }    
-            (void) closedir (dp);
-          }
-          else {
-            perror ("Ne peux pas ouvrir le répertoire");
-          }
-          printf("Indiquer le nom du fichier : ");
-          char fileName[1023];
-          fgets(fileName,sizeof(fileName),stdin);
-          fileName[strlen(fileName)-1]='\0';
-          FILE *fps = fopen(fileName, "r");
-          if (fps == NULL){
-            printf("Ne peux pas ouvrir le fichier suivant : %s",fileName);
-          }
-          else {
-            char str[1000];    
-            // Lire et afficher le contenu du fichier
-            while (fgets(str, 1000, fps) != NULL) {
-              fprintf(fp1,"%s",str);
-              strcat(contenu_fichier,str);
+    // Demander à l'utilisateur quel fichier afficher
+    DIR *dp;
+    struct dirent *ep;
+    dp = opendir ("./");
+    if (dp != NULL) {
+        fprintf(fp1,"Voilà la liste de fichiers :\n");
+        while (ep = readdir (dp)) {
+            if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0)
+                fprintf(fp1,"%s\n",ep->d_name);
+        }
+        (void) closedir (dp);
+    }
+    else {
+        perror ("Ne peux pas ouvrir le répertoire");
+    }
+    printf("Indiquer le nom du fichier : ");
+    char fileName[1023];
+    fgets(fileName,sizeof(fileName),stdin);
+    fileName[strlen(fileName)-1]='\0';
+    FILE *fps = fopen(fileName, "r");
+    if (fps == NULL){
+        printf("Ne peux pas ouvrir le fichier suivant : %s",fileName);
+    }
+    else {
+        char str[1000];
+        // Lire et afficher le contenu du fichier
+        while (fgets(str, 1000, fps) != NULL) {
+            fprintf(fp1,"%s",str);
+            strcat(contenu_fichier,str);
 
-            }
-            //printf("contenu fichier : %s\n", contenu_fichier );
-          }
-          fclose(fps);  
+        }
+        //printf("contenu fichier : %s\n", contenu_fichier );
+    }
+    fclose(fps);
 }
 
 
@@ -73,25 +73,25 @@ void *client_message_thread(void *socket) {
         fgets(send_buffer, MAX_MSG_SIZE, stdin);
         //cas ou faut envoyer un fichier
         if (strcmp("file\n", send_buffer)==0){
-            
-        //pthread_mutex_unlock(&mutex);
-    }
-    else{
-        send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
-        printf("[Vous] : %s", send_buffer);
-    }
+
+            //pthread_mutex_unlock(&mutex);
+        }
+        else{
+            send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
+            printf("[Vous] : %s", send_buffer);
+        }
     }
 }
 
 void *client_file_thread(void *socket) {
     char send_buffer[MAX_FILE_SIZE];
     int server_socket_file = (int) (long) socket;
-    
+
 }
 
 
-int  create_server_socket(char *argv[],int num_port){
-        // creates a socket in the IPV4 domain using TCP protocol
+int  create_server_socket(char *argv[],int num_port) {
+    // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
     check_error(server_socket, "Erreur lors de la création de la socket serveur.\n");
     printf("Socket serveur créée avec succès sur le port %d.\n",num_port);
@@ -110,7 +110,7 @@ int  create_server_socket(char *argv[],int num_port){
     check_error(connect_res, "Erreur lors de la connexion au serveur.\n");
     char msgServeur[MAX_MSG_SIZE];
     recv(server_socket, msgServeur, MAX_MSG_SIZE, 0);
-    printf("%s\n",msgServeur );
+    printf("%s\n", msgServeur );
 
 
     // send thread start

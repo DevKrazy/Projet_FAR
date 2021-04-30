@@ -11,7 +11,6 @@
 
 // TODO: quand on reçoit un mp : remplacer "server" par le pseudo
 // TODO: utiliser des puts plutot que des printf
-// TODO: corriger le print du port
 
 sem_t semaphore;
 Client clients[MAX_CLIENTS];
@@ -80,32 +79,33 @@ int configure_server(int port) {
     return server_socket;
 }
 
-  // a appele pour connecter la socket client file
-  void accept_client_file(int server_socket_file) {
-      struct sockaddr_in client_address;
-        socklen_t client_address_len = sizeof(struct sockaddr_in);
+// a appele pour connecter la socket client file
+void accept_client_file(int server_socket_file) {
+    struct sockaddr_in client_address;
+    socklen_t client_address_len = sizeof(struct sockaddr_in);
 
-        /*sem_getvalue(&semaphore, &sem_value);
-        int sem_wait_res = sem_wait(&semaphore); // decrements the semaphore, waits if it is 0
-        check_error(sem_wait_res, "Erreur lors du sem_wait.\n");*/
+    /*sem_getvalue(&semaphore, &sem_value);
+    int sem_wait_res = sem_wait(&semaphore); // decrements the semaphore, waits if it is 0
+    check_error(sem_wait_res, "Erreur lors du sem_wait.\n");*/
 
-        int client_socket_file = accept(server_socket_file, (struct sockaddr *) &client_address, &client_address_len);
-        check_error(client_socket_file, "Erreur lors de l'acceptation du client file.\n");
-        send(client_socket_file, "Connexion file acceptée\n", MAX_MSG_SIZE, 0);
-    }
+    int client_socket_file = accept(server_socket_file, (struct sockaddr *) &client_address, &client_address_len);
+    check_error(client_socket_file, "Erreur lors de l'acceptation du client file.\n");
+    send(client_socket_file, "Connexion file acceptée\n", MAX_MSG_SIZE, 0);
+    return
+}
 
-    //accepter un client
-  int accept_client(int server_socket){
+//accepter un client
+int accept_client(int server_socket) {
 
-        // clients address initialization
-        struct sockaddr_in client_address;
-        socklen_t client_address_len = sizeof(struct sockaddr_in);
+    // clients address initialization
+    struct sockaddr_in client_address;
+    socklen_t client_address_len = sizeof(struct sockaddr_in);
 
-        int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
-        check_error(client_socket, "Erreur lors de l'acceptation du client.\n");
-        send(client_socket, "Connexion acceptée\n", MAX_MSG_SIZE, 0);
-        return client_socket;
-    }
+    int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+    check_error(client_socket, "Erreur lors de l'acceptation du client.\n");
+    send(client_socket, "Connexion acceptée\n", MAX_MSG_SIZE, 0);
+    return client_socket;
+}
 
 int main(int argc, char *argv[]) {
 
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
         int sem_wait_res = sem_wait(&semaphore); // decrements the semaphore, waits if it is 0
         check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
 
-        int client_socket_file=accept_client(server_socket_file);
+        int client_socket_file = accept_client(server_socket_file);
         int client_socket = accept_client(server_socket);
 
         // puts

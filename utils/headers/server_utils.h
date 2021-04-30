@@ -14,6 +14,7 @@ struct Client {
     int client_socket;
     char pseudo[MAX_NAME_SIZE];
     pthread_t msg_thread;
+    pthread_t file_thread;
 };
 
 /**
