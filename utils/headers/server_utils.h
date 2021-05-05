@@ -11,7 +11,8 @@
 
 typedef struct Client Client;
 struct Client {
-    int client_socket;
+    int msg_socket;
+    int file_socket;
     char pseudo[MAX_NAME_SIZE];
     pthread_t msg_thread;
     pthread_t file_thread;

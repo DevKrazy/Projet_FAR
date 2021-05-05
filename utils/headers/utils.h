@@ -2,7 +2,7 @@
 #define PROJET_FAR_UTILS_H
 #endif
 
-#define MAX_MSG_SIZE 10000
+#define MAX_MSG_SIZE 200
 #define MAX_FILE_SIZE 10000
 #define MAX_NAME_SIZE 12
 #define END_WORD "fin\n"
