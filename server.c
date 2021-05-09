@@ -153,7 +153,7 @@ void* file_sending_thread(void* socket) {
  * @param addr_return the address where the created sockaddr_in will be stored at
  * @return 0 if everything was successful; -1 if there was an error during socket creation
  */
-int configure_server_socket(char* port, int* socket_return, struct sockaddr_in *addr_return) {
+int configure_server_socket(int port, int* socket_return, struct sockaddr_in *addr_return) {
 
     // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -167,8 +167,8 @@ int configure_server_socket(char* port, int* socket_return, struct sockaddr_in *
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET; // address type
     server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = htons(atoi(port)); // address port (converted from the CLI)
-    printf("Adresse du serveur configurée avec succès ! (port : %s)\n", port);
+    server_address.sin_port = htons(port); // address port (converted from the CLI)
+    printf("Adresse du serveur configurée avec succès ! (port : %d)\n", port);
 
     *socket_return = server_socket;
     *addr_return = server_address;
@@ -201,38 +201,6 @@ int bind_and_listen_on(int socket, struct sockaddr_in address) {
     return 0;
 }
 
-/**
- * Configures the server and returns the server's socket.
- * @param port the listening port
- * @return the server socket
- */
-int configure_server(int port) {
-
-    // creates a socket in the IPV4 domain using TCP protocol
-    int server_socket = socket(PF_INET, SOCK_STREAM, 0);
-    check_error(server_socket, "Erreur lors de la création de la socket serveur.\n");
-    printf("Socket serveur créée avec succès.\n");
-
-    // server address configuration
-    struct sockaddr_in server_address;
-    server_address.sin_family = AF_INET; // address type
-    server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = htons(port); // address port (converted from the CLI)
-    //server_address.sin_port = htons(atoi(argv[1])); // address port (converted from the CLI)
-
-    // bind
-    int bind_res = bind(server_socket, (struct sockaddr*) &server_address, sizeof(server_address)); // binds address to server socket
-    check_error(bind_res, "Erreur lors du bind\n");
-    printf("Bind réussi !\n");
-
-    // listen
-    int listen_res = listen(server_socket, MAX_CLIENTS); // listens for incoming connections (maximum 2 waiting connections)
-    check_error(listen_res, "Erreur lors du listen\n");
-    printf("Le serveur écoute sur le port %d\n", port);
-    //printf("Le serveur écoute sur le port %s.\n", argv[1]);
-
-    return server_socket;
-}
 
 int accept_client(int server_socket) {
 
@@ -263,48 +231,30 @@ int main(int argc, char *argv[]) {
     // semaphore initialisation
     sem_init(&semaphore, PTHREAD_PROCESS_SHARED, MAX_CLIENTS);
     //sem_init(&file_semaphore, PTHREAD_PROCESS_SHARED, 0);
-    //check_error(-1, "Erreur lors de l'initialisation du semaphore.\n");
-    int server_msg_socket = configure_server(atoi(argv[1]));
-    int server_file_socket = configure_server(atoi(argv[1])+1);
 
-    /*
     // configures the server messaging socket
     int server_msg_socket;
     struct sockaddr_in server_msg_address;
-    configure_server_socket(argv[1], &server_msg_socket, &server_msg_address);
+    configure_server_socket(atoi(argv[1]), &server_msg_socket, &server_msg_address);
     bind_and_listen_on(server_msg_socket, server_msg_address);
 
     // configures the server file sending socket
     int server_file_socket;
     struct sockaddr_in server_file_address;
-    configure_server_socket(argv[2], &server_file_socket, &server_file_address);
+    configure_server_socket(atoi(argv[1]) + 1, &server_file_socket, &server_file_address);
     bind_and_listen_on(server_file_socket, server_file_address);
-     */
 
     while (1) {
 
-        // clients address initialization
-        /*
-        struct sockaddr_in client_msg_address;
-        socklen_t client_address_len = sizeof(struct sockaddr_in);
-         */
 
         // decrements the semaphore before accepting a new connection
         sem_getvalue(&semaphore, &sem_value);
         int sem_wait_res = sem_wait(&semaphore); // decrements the semaphore, waits if it is 0
         check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
 
-        /*
-        int client_msg_socket = accept(server_msg_socket, (struct sockaddr *) &client_msg_address, &client_address_len);
-        check_error(client_msg_socket, "Erreur lors de l'acceptation du client.\n");
-        send(client_msg_socket, "Connexion acceptée\n", MAX_MSG_SIZE, 0);
-         */
-
-
         int client_file_socket = accept_client(server_file_socket);
         int client_file_sending_socket = accept_client(server_file_socket);
         int client_msg_socket = accept_client(server_msg_socket);
-
 
         for (int k = 0; k < MAX_CLIENTS; k++) {
             if (clients[k].client_socket == 0) {
