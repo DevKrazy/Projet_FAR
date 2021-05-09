@@ -256,14 +256,14 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in server_file_sending_address;
     configure_connecting_socket(argv[1], atoi(argv[2]) + 1, &server_file_sending_socket, &server_file_sending_address);
     connect_on(server_file_sending_socket, server_file_sending_address);
-    pthread_create(&file_thread, NULL, file_sending_thread, NULL);
+    pthread_create(&file_thread, NULL, file_sending_thread, (void *) (long) server_file_sending_socket);
 
 
     int server_file_receiving_socket;
     struct sockaddr_in server_file_receiving_address;
     configure_connecting_socket(argv[1], atoi(argv[2]) + 1, &server_file_receiving_socket, &server_file_receiving_address);
     connect_on(server_file_receiving_socket, server_file_receiving_address);
-    pthread_create(&file_recv_thread, NULL, file_receiving_thread, NULL);
+    pthread_create(&file_recv_thread, NULL, file_receiving_thread, (void *) (long) server_file_receiving_socket);
 
 
     int server_msg_socket = create_server_socket(argv,atoi(argv[2]));

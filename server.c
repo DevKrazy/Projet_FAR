@@ -17,7 +17,6 @@
 
 sem_t semaphore;
 //sem_t file_semaphore;
-int fake_semaphore = 0;
 int fake_send_semaphore = 0;
 Client clients[MAX_CLIENTS];
 char file_content[MAX_FILE_SIZE];
@@ -53,7 +52,6 @@ void *messaging_thread_func(void *socket) {
         if (strcmp(send_buffer, "filesrv\n") == 0) {
             recv(client_socket, fileName, MAX_MSG_SIZE, 0); // reception du nom du fichier
             fake_send_semaphore += 1;
-
         } else if (is_private_message(send_buffer, clients) == 1) {
             send_message_to(send_buffer, clients,client_socket);
         } else {
@@ -91,8 +89,9 @@ void* file_receiving_thread_func(void* socket) {
         char folder[200] = "./recv/";
         strcat(folder, fileName);
         int fp = open(folder,  O_WRONLY | O_CREAT, S_IRWXU);
+        printf("RECEIVED FILE CONTENT FROM CLIENT\n");
         printf("%s\n", file_content);
-        write(fp,file_content,size);
+        write(fp, file_content, size);
         close(fp);
         free(file_content);
     }
@@ -162,13 +161,12 @@ int main(int argc, char *argv[]) {
 
     while (1) {
 
-
         // decrements the semaphore before accepting a new connection
         sem_getvalue(&semaphore, &sem_value);
         int sem_wait_res = sem_wait(&semaphore); // decrements the semaphore, waits if it is 0
         check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
 
-        int client_file_socket = accept_client(server_file_socket);
+        int client_file_receiving_socket = accept_client(server_file_socket);
         int client_file_sending_socket = accept_client(server_file_socket);
         int client_msg_socket = accept_client(server_msg_socket);
 
@@ -176,9 +174,9 @@ int main(int argc, char *argv[]) {
             if (clients[k].client_msg_socket == 0) {
                 // we found a client not connected
                 clients[k].client_msg_socket = client_msg_socket;
-                clients[k].client_file_socket = client_file_socket;
+                clients[k].client_file_socket = client_file_receiving_socket;
                 pthread_create(&clients[k].messaging_thread, NULL, messaging_thread_func, (void *) (long) client_msg_socket);
-                pthread_create(&clients[k].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) client_file_socket);
+                pthread_create(&clients[k].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) client_file_receiving_socket);
                 pthread_create(&clients[k].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) client_file_sending_socket);
                 printf("Un clients connecté de plus ! %d client(s)\n", get_client_count(semaphore));
                 break;
