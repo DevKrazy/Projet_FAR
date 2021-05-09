@@ -2,7 +2,7 @@
 #define PROJET_FAR_UTILS_H
 #endif
 
-#define MAX_MSG_SIZE 200
+#define MAX_MSG_SIZE 10000
 #define MAX_FILE_SIZE 10000
 #define MAX_NAME_SIZE 12
 #define END_WORD "fin\n"
@@ -15,12 +15,3 @@ void printf_red(char *message);
 
 int value_in_array(char* val, char** arr);
 
-/*
- * CODE GIVEN BY THE PROFESSOR
- */
-int get_last_tty();
-
-/*
- * CODE GIVEN BY THE PROFESSOR
- */
-FILE* new_tty();

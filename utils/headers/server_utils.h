@@ -11,11 +11,11 @@
 
 typedef struct Client Client;
 struct Client {
-    int msg_socket;
-    int file_socket;
+    int client_socket;
     char pseudo[MAX_NAME_SIZE];
     pthread_t msg_thread;
     pthread_t file_thread;
+    pthread_t file_send_thread;
 };
 
 /**
@@ -58,7 +58,7 @@ int get_name_by_socket(Client clients[], int socket, char buffer[MAX_NAME_SIZE])
  * @param msg the message to send (the first word must be the receiver's name)
  * @param clients the clients array
  */
-void send_message_to(char *msg, Client clients[]);
+void send_message_to(char *msg, Client clients[],int from_client_socket);
 
 /**
  * Checks if a message is a private message (if the first word is a client's nickname).

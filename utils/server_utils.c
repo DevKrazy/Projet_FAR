@@ -24,7 +24,7 @@ int get_client_count(sem_t semaphore) {
  */
 int get_index_by_socket(Client clients[], int socket) {
     for (int i = 0; i < MAX_CLIENTS; i++) {
-        if (clients[i].msg_socket == socket) {
+        if (clients[i].client_socket == socket) {
             return i;
         }
     }
@@ -41,7 +41,7 @@ int get_index_by_socket(Client clients[], int socket) {
 int get_socket_by_name(Client clients[], char *name) {
     for (int i = 0; i < MAX_CLIENTS; i++) {
         if (strcmp(clients[i].pseudo, name) == 0)  {
-            return clients[i].msg_socket;
+            return clients[i].client_socket;
         }
     }
     return -1;
@@ -71,10 +71,13 @@ int get_name_by_socket(Client clients[], int socket, char buffer[MAX_NAME_SIZE])
  * @param msg the message to send (the first word must be the receiver's name)
  * @param clients the clients array
  */
-void send_message_to(char *msg, Client clients[]) {
+void send_message_to(char *msg, Client clients[], int from_client_socket) {
     char *name = strtok(msg, " "); // extracts the name from the message
     int num_socket = get_socket_by_name(clients, name);
+    char nom[MAX_NAME_SIZE];
     if (num_socket > 0) {
+        get_name_by_socket(clients,from_client_socket,nom);
+        send(num_socket,nom,MAX_MSG_SIZE,0);
         send(num_socket, msg + strlen(name) + 1, MAX_MSG_SIZE, 0); // increments the pointer to remove the name
     }
 }
@@ -106,13 +109,17 @@ int is_private_message(char *msg, Client clients[]) {
  * @return 1 if the message is a private message; 0 otherwise
  */
 void broadcast_message (char *msg, Client clients[], int from_client_index) {
-    int client_socket = clients[from_client_index].msg_socket;
+    int client_socket = clients[from_client_index].client_socket;
+    char nom[12];
+    get_name_by_socket(clients,clients[from_client_index].client_socket, nom);
+    printf("pseudo de celui qui envoie %s\n", nom);
     printf("[%s](%d): %s", clients[from_client_index].pseudo, from_client_index, msg);
     for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
-        printf("client %d : %d\n", j,  clients[j].msg_socket);
-        if (clients[j].msg_socket != client_socket && clients[j].msg_socket != 0) { // envoi
-            send(clients[j].msg_socket, msg, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
-            printf("Envoyé au clients : %s\n", msg);
+        printf("client %d : %d\n", j,  clients[j].client_socket);
+        if (clients[j].client_socket != client_socket && clients[j].client_socket != 0) { // envoi
+            send(clients[j].client_socket,nom, MAX_MSG_SIZE, 0);
+            send(clients[j].client_socket, msg, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
+            printf("Envoyé aux clients : %s\n", msg);
         } else {
             printf("On n'envoie pas\n");
         }
