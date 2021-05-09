@@ -33,7 +33,7 @@ int is_private_message(char *msg, Client clients[]);
 
 void broadcast_message (char *msg, Client clients[], int from_client_index);
 
-int configure_server_socket(int port, int* socket_return, struct sockaddr_in *addr_return);
+int configure_listening_socket(int port, int* socket_return, struct sockaddr_in *addr_return);
 
 int bind_and_listen_on(int socket, struct sockaddr_in address);
 

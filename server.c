@@ -150,13 +150,13 @@ int main(int argc, char *argv[]) {
     // configures the server messaging socket
     int server_msg_socket;
     struct sockaddr_in server_msg_address;
-    configure_server_socket(atoi(argv[1]), &server_msg_socket, &server_msg_address);
+    configure_listening_socket(atoi(argv[1]), &server_msg_socket, &server_msg_address);
     bind_and_listen_on(server_msg_socket, server_msg_address);
 
     // configures the server file sending socket
     int server_file_socket;
     struct sockaddr_in server_file_address;
-    configure_server_socket(atoi(argv[1]) + 1, &server_file_socket, &server_file_address);
+    configure_listening_socket(atoi(argv[1]) + 1, &server_file_socket, &server_file_address);
     bind_and_listen_on(server_file_socket, server_file_address);
 
     while (1) {
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
                 pthread_create(&clients[k].messaging_thread, NULL, messaging_thread_func, (void *) (long) client_msg_socket);
                 pthread_create(&clients[k].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) client_file_receiving_socket);
                 pthread_create(&clients[k].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) client_file_sending_socket);
-                printf("Un clients connecté de plus ! %d client(s)\n", get_client_count(semaphore));
+                printf("Un client connecté de plus ! %d client(s)\n", get_client_count(semaphore));
                 break;
             }
         }

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include "headers/client_utils.h"
+#include "headers/utils.h"
+
 
 /**
  * Configures the server's socket and updates the socket_return and addr_return values with the
@@ -45,11 +47,20 @@ int configure_connecting_socket(char* address, int port, int* socket_return, str
 int connect_on(int socket, struct sockaddr_in address) {
     // connection to the server (message socket)
     socklen_t server_address_len = sizeof(struct sockaddr_in);
+
     int connect_res = connect(socket, (struct sockaddr*) &address, server_address_len); // opens the socket with the configured address
     if (connect_res == -1) {
         perror("Erreur lors de la connexion au serveur.\n");
         return -1;
     }
+
     printf("En attente de l'acceptation du serveur...\n");
+
+    char welcome_message[MAX_MSG_SIZE];
+    printf("Before recv\n");
+    recv(socket, welcome_message, MAX_MSG_SIZE, 0);
+    printf("After recv\n");
+    printf("Message de bienvenue du serveur : %s\n", welcome_message);
+
     return 0;
 }

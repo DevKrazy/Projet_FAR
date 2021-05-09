@@ -138,7 +138,7 @@ void broadcast_message (char *msg, Client clients[], int from_client_index) {
  * @param addr_return the address where the created sockaddr_in will be stored at
  * @return 0 if everything was successful; -1 if there was an error during socket creation
  */
-int configure_server_socket(int port, int* socket_return, struct sockaddr_in *addr_return) {
+int configure_listening_socket(int port, int* socket_return, struct sockaddr_in *addr_return) {
 
     // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -191,7 +191,6 @@ int accept_client(int server_socket) {
     // clients address initialization
     struct sockaddr_in client_address;
     socklen_t client_address_len = sizeof(struct sockaddr_in);
-
     int client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
     check_error(client_socket, "Erreur lors de l'acceptation du client.\n");
     send(client_socket, "Connexion acceptée\n", MAX_MSG_SIZE, 0);
