@@ -1,3 +1,3 @@
-# This script launches a client on the localhost address and the given port (first arg)
 clear
+gcc ../client.c -o client -lpthread ../utils/server_utils.c ../utils/utils.c
 ./client 127.0.0.1 $1

@@ -3,4 +3,4 @@ project(Projet_FAR C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(Projet_FAR server.c client.c utils/utils.c utils/headers/utils.h utils/server_utils.c utils/headers/server_utils.h prof_code.c)
+add_executable(Projet_FAR server.c client.c utils/utils.c utils/headers/utils.h utils/server_utils.c utils/headers/server_utils.h)
