@@ -32,4 +32,8 @@ int is_private_message(char *msg, Client clients[]);
 
 void broadcast_message (char *msg, Client clients[], int from_client_index);
 
-void register_client(Client clients[], int client_socket, void * thread_function);
+int configure_server_socket(int port, int* socket_return, struct sockaddr_in *addr_return);
+
+int bind_and_listen_on(int socket, struct sockaddr_in address);
+
+int accept_client(int server_socket);

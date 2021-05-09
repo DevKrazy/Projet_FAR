@@ -31,7 +31,7 @@ int file_size;
  * @param addr_return the address where the created sockaddr_in will be stored at
  * @return 0 if everything was successful; -1 if there was an error during socket creation
  */
-int configure_server_socket(char* address, int port, int* socket_return, struct sockaddr_in *addr_return) {
+int configure_connecting_socket(char* address, int port, int* socket_return, struct sockaddr_in *addr_return) {
 
     // creates a socket in the IPV4 domain using TCP protocol
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -254,14 +254,14 @@ int main(int argc, char *argv[]) {
 
     int server_file_sending_socket;
     struct sockaddr_in server_file_sending_address;
-    configure_server_socket(argv[1], atoi(argv[2]) + 1, &server_file_sending_socket, &server_file_sending_address);
+    configure_connecting_socket(argv[1], atoi(argv[2]) + 1, &server_file_sending_socket, &server_file_sending_address);
     connect_on(server_file_sending_socket, server_file_sending_address);
     pthread_create(&file_thread, NULL, file_sending_thread, NULL);
 
 
     int server_file_receiving_socket;
     struct sockaddr_in server_file_receiving_address;
-    configure_server_socket(argv[1], atoi(argv[2]) + 1, &server_file_receiving_socket, &server_file_receiving_address);
+    configure_connecting_socket(argv[1], atoi(argv[2]) + 1, &server_file_receiving_socket, &server_file_receiving_address);
     connect_on(server_file_receiving_socket, server_file_receiving_address);
     pthread_create(&file_recv_thread, NULL, file_receiving_thread, NULL);
 
