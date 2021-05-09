@@ -11,11 +11,12 @@
 
 typedef struct Client Client;
 struct Client {
-    int client_socket;
+    int client_msg_socket;
+    int client_file_socket;
     char pseudo[MAX_NAME_SIZE];
-    pthread_t msg_thread;
-    pthread_t file_thread;
-    pthread_t file_send_thread;
+    pthread_t messaging_thread;
+    pthread_t file_receiving_thread;
+    pthread_t file_sending_thread;
 };
 
 int get_client_count(sem_t semaphore);

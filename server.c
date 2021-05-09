@@ -29,8 +29,7 @@ int file_size;
  * @param socket the server's socket
  * @return
  */
-void *messaging_thread(void *socket) {
-    printf("Thread de messaging client créé !\n");
+void *messaging_thread_func(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
     int client_socket = (int) (long) socket;
     int client_index = get_index_by_socket(clients, client_socket);
@@ -45,42 +44,33 @@ void *messaging_thread(void *socket) {
 
         // Checks if the client closed the discussion or the program
         if (recv_res == 0 || strcmp(send_buffer, "fin\n") == 0) {
-            clients[client_index].client_socket = 0; // client_socket reset
+            clients[client_index].client_msg_socket = 0; // client_msg_socket reset
             sem_post(&semaphore);
             shutdown(client_socket, 2);
             pthread_exit(0);
         }
 
-      
-       if (strcmp(send_buffer, "filesrv\n") == 0) {
-        printf("On est dans le fileSSRV\n");
-        recv(client_socket, fileName, MAX_MSG_SIZE, 0); // reception du nom du fichier
-        printf("Received Filename: %s\n", fileName );
-         fake_send_semaphore += 1;
-         printf("Fake_send_semaphore: %d\n", fake_send_semaphore);
+        if (strcmp(send_buffer, "filesrv\n") == 0) {
+            recv(client_socket, fileName, MAX_MSG_SIZE, 0); // reception du nom du fichier
+            fake_send_semaphore += 1;
 
-
-       } else if (is_private_message(send_buffer, clients) == 1) {
+        } else if (is_private_message(send_buffer, clients) == 1) {
             send_message_to(send_buffer, clients,client_socket);
-        }
-        else {
+        } else {
             broadcast_message(send_buffer, clients, client_index);
         }
-        
+
     }
 }
 
-void* file_receiving_thread(void* socket) {
-    printf("Lancement du thread de réception de fichiers.\n");
+void* file_receiving_thread_func(void* socket) {
     int client_socket = (int) (long) socket;
     char fileName[MAX_MSG_SIZE];
     int size;
     char* file_content = NULL;
 
     while (1) {
-        printf("Hello file\n");
         int recv1 = recv(client_socket, fileName, MAX_MSG_SIZE, 0);
-        printf("fileName: %d\n",recv1 );
         if (recv1 == 0) {
             shutdown(client_socket, 2);
             pthread_exit(0);
@@ -98,45 +88,40 @@ void* file_receiving_thread(void* socket) {
         }
 
         // saves the file
-        char folder[200] = "./recv/"; 
+        char folder[200] = "./recv/";
         strcat(folder, fileName);
         int fp = open(folder,  O_WRONLY | O_CREAT, S_IRWXU);
-        //fp = fopen("test.txt", "w");
         printf("%s\n", file_content);
-        //fputs(file_content, fp);
         write(fp,file_content,size);
         close(fp);
         free(file_content);
     }
 }
 
-void* file_sending_thread(void* socket) {
-      printf("Lancement du thread d'envoi de fichiers.\n");
-      int client_socket = (int) (long) socket;
-      while (1) {
+void* file_sending_thread_func(void* socket) {
+    int client_socket = (int) (long) socket;
+    while (1) {
         //sem_wait(&file_semaphore);
         while (fake_send_semaphore == 0) {}
-            printf("After filesending fake_send_semaphore\n");
         fake_send_semaphore -= 1;
         int len = (int) strlen(file_content);
-        
-        
+
+
         int fp = open(fileName, O_RDONLY);
-            int size=0;
-            if (fp == -1){
-                printf("Ne peux pas ouvrir le fichier suivant : %s\n", fileName);
-            } else {
-                char str[MAX_FILE_SIZE];
-                // Stores the file content
-                size = read(fp,file_content,MAX_FILE_SIZE);
-                file_content[size]=0;
-                printf("size %d\n",size);
-                //write(1,file_content,size);
+        int size=0;
+        if (fp == -1){
+            printf("Ne peux pas ouvrir le fichier suivant : %s\n", fileName);
+        } else {
+            char str[MAX_FILE_SIZE];
+            // Stores the file content
+            size = read(fp,file_content,MAX_FILE_SIZE);
+            file_content[size]=0;
+            printf("size %d\n",size);
+            //write(1,file_content,size);
 
-            }
-            close(fp);
+        }
+        close(fp);
 
-        
         send(client_socket, &file_size, sizeof(int), 0); // envoi taille fichier
         send(client_socket, file_content, len, 0); // envoi du contenu du fichier
         printf("file_content: %s\n",file_content);
@@ -188,12 +173,13 @@ int main(int argc, char *argv[]) {
         int client_msg_socket = accept_client(server_msg_socket);
 
         for (int k = 0; k < MAX_CLIENTS; k++) {
-            if (clients[k].client_socket == 0) {
+            if (clients[k].client_msg_socket == 0) {
                 // we found a client not connected
-                clients[k].client_socket = client_msg_socket;
-                pthread_create(&clients[k].msg_thread, NULL, messaging_thread, (void *) (long) client_msg_socket);
-                pthread_create(&clients[k].file_thread, NULL, file_receiving_thread, (void *) (long) client_file_socket);
-                pthread_create(&clients[k].file_send_thread, NULL, file_sending_thread, (void *) (long) client_file_sending_socket);
+                clients[k].client_msg_socket = client_msg_socket;
+                clients[k].client_file_socket = client_file_socket;
+                pthread_create(&clients[k].messaging_thread, NULL, messaging_thread_func, (void *) (long) client_msg_socket);
+                pthread_create(&clients[k].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) client_file_socket);
+                pthread_create(&clients[k].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) client_file_sending_socket);
                 printf("Un clients connecté de plus ! %d client(s)\n", get_client_count(semaphore));
                 break;
             }

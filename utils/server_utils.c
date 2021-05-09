@@ -28,7 +28,7 @@ int get_client_count(sem_t semaphore) {
  */
 int get_index_by_socket(Client clients[], int socket) {
     for (int i = 0; i < MAX_CLIENTS; i++) {
-        if (clients[i].client_socket == socket) {
+        if (clients[i].client_msg_socket == socket) {
             return i;
         }
     }
@@ -45,7 +45,7 @@ int get_index_by_socket(Client clients[], int socket) {
 int get_socket_by_name(Client clients[], char *name) {
     for (int i = 0; i < MAX_CLIENTS; i++) {
         if (strcmp(clients[i].pseudo, name) == 0)  {
-            return clients[i].client_socket;
+            return clients[i].client_msg_socket;
         }
     }
     return -1;
@@ -113,16 +113,16 @@ int is_private_message(char *msg, Client clients[]) {
  * @return 1 if the message is a private message; 0 otherwise
  */
 void broadcast_message (char *msg, Client clients[], int from_client_index) {
-    int client_socket = clients[from_client_index].client_socket;
+    int client_socket = clients[from_client_index].client_msg_socket;
     char nom[12];
-    get_name_by_socket(clients,clients[from_client_index].client_socket, nom);
+    get_name_by_socket(clients, clients[from_client_index].client_msg_socket, nom);
     printf("pseudo de celui qui envoie %s\n", nom);
     printf("[%s](%d): %s", clients[from_client_index].pseudo, from_client_index, msg);
     for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
-        printf("client %d : %d\n", j,  clients[j].client_socket);
-        if (clients[j].client_socket != client_socket && clients[j].client_socket != 0) { // envoi
-            send(clients[j].client_socket,nom, MAX_MSG_SIZE, 0);
-            send(clients[j].client_socket, msg, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
+        printf("client %d : %d\n", j,  clients[j].client_msg_socket);
+        if (clients[j].client_msg_socket != client_socket && clients[j].client_msg_socket != 0) { // envoi
+            send(clients[j].client_msg_socket, nom, MAX_MSG_SIZE, 0);
+            send(clients[j].client_msg_socket, msg, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
             printf("Envoyé aux clients : %s\n", msg);
         } else {
             printf("On n'envoie pas\n");
@@ -174,7 +174,6 @@ int bind_and_listen_on(int socket, struct sockaddr_in address) {
         perror("Erreur lors du bind\\n");
         return -1;
     }
-    printf("Bind réussi !\n");
 
     // listen
     int listen_res = listen(socket, MAX_CLIENTS); // listens for incoming connections (maximum 2 waiting connections)
