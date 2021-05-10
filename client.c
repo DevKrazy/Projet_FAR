@@ -26,24 +26,12 @@ char file_content[MAX_FILE_SIZE];
 char fileName[MAX_MSG_SIZE];
 int file_size;
 
-
 void get_file_to_send(int* size_file) {
     // Demander à l'utilisateur quel fichier afficher
-    DIR *dir_stream;
-    struct dirent *dir_entry;
-    dir_stream = opendir("./");
-    if (dir_stream != NULL) {
-        printf("Voilà la liste de fichiers :\n");
-        while (dir_entry = readdir (dir_stream)) {
-            if(strcmp(dir_entry->d_name, ".") != 0 && strcmp(dir_entry->d_name, "..") != 0) {
-                // does not display the . and .. files
-                printf("%s\n", dir_entry->d_name);
-            }
-        }
-        (void) closedir(dir_stream);
-    } else {
-        perror ("Ne peux pas ouvrir le répertoire");
-    }
+
+    char* file_list = malloc(1); // malloc(1) because list_files reallocate the memory
+    list_files("./", &file_list);
+    printf("LISTE DE FICHIERS : \n %s", file_list);
 
     printf("Indiquer le nom du fichier : \n");
     fgets(fileName, sizeof(fileName), stdin);
@@ -142,7 +130,6 @@ int main(int argc, char *argv[]) {
     } else {
         printf("Lancement du client...\n");
     }
-
 
     int server_file_sending_socket;
     struct sockaddr_in server_file_sending_address;

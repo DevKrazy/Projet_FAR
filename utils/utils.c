@@ -27,12 +27,6 @@ void terminate_program(int code) {
     exit(code);
 }
 
-/**
- *
- * @param val
- * @param arr
- * @return
- */
 int value_in_array(char* val, char** arr) {
     int i;
     printf("%s", arr[0]);
@@ -44,3 +38,30 @@ int value_in_array(char* val, char** arr) {
     return 0;
 }
 
+
+/**
+ * Gets the files of a given directory and stores the list inside the given buffer.
+ * @param dir_name the directory d_name
+ * @param buffer the buffer where we'll store the file list
+ */
+void list_files(char* dir_name, char** buffer) {
+    DIR *dir_stream;
+    struct dirent *dir_entry;
+    dir_stream = opendir(dir_name);
+    int realloc_size = 0;
+    if (dir_stream != NULL) {
+        while (dir_entry = readdir (dir_stream)) {
+            if(strcmp(dir_entry->d_name, ".") != 0 && strcmp(dir_entry->d_name, "..") != 0) {
+                // does not display the . and .. files
+                realloc_size += strlen(dir_entry->d_name) + 2; // +2 for the \0 and the \n
+                *buffer = realloc(*buffer, realloc_size);
+                strcat(*buffer, dir_entry->d_name);
+                strcat(*buffer, "\n");
+                printf("list_files filename : %s", *buffer);
+            }
+        }
+        (void) closedir(dir_stream);
+    } else {
+        perror ("Ne peux pas ouvrir le répertoire");
+    }
+}
