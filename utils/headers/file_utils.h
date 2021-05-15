@@ -6,5 +6,3 @@
 void send_file(int socket, char* folder, char* filename);
 
 void receive_file(int socket, char* folder);
-
-void get_filename_to_send(char* dir, char** return_filename);

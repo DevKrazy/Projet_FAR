@@ -208,5 +208,19 @@ int accept_client(int server_socket) {
     return client_socket;
 }
 
+void list_Rooms (Room rooms [], char **list){
+  strcat(*list,"Liste des Rooms (nom + port):\n");
+  for(int r=0;r<NB_MAX_ROOM;r++){
+    strcat(*list, "- ");
+    strcat(*list, "Nom: ");
+    strcat(*list, rooms[r].room_name);
+    strcat(*list, " Port: ");
+    char port[MAX_MSG_SIZE];
+    sprintf(port, "%d",rooms[r].num_port );
+    puts(port);
+    strcat(*list,port);
+  }
+}
+
 
 

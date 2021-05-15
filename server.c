@@ -9,19 +9,19 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include "utils/headers/utils.h"
-#include "utils/headers/file_utils.h"
 #include "utils/headers/server_utils.h"
+
 
 // TODO: utiliser des puts plutot que des printf
 // TODO: corriger le retour a la ligne en trop quand on reçoit un message (ça vient du strtok surement)
 
 sem_t semaphore;
-
+//sem_t file_semaphore;
 Client clients[MAX_CLIENTS];
+Room rooms[NB_MAX_ROOM];
 char file_content[MAX_FILE_SIZE];
 char fileName[MAX_MSG_SIZE];
 int file_size;
-
 //pour enregitrer les fichiers dans le serveur
 int server_file_socket;
 struct sockaddr_in server_file_address;
@@ -33,12 +33,50 @@ struct sockaddr_in server_send_file_address;
 
 void* file_sending_thread_func(void* socket);
 void* file_receiving_thread_func(void* socket);
+void* room_thread_func(void* socket);
+
+void* room_thread_func(void* socket){
+  int client_socket = (int) (long) socket;
+  for(int m =0; m<NB_MAX_ROOM;m++){ 
+  }
+
+  
+}
+
 
 void* file_receiving_thread_func(void* socket) {
     int client_socket = (int) (long) socket;
-    receive_file(client_socket, SERVER_DIR);
-    shutdown(client_socket, 2);
-    pthread_exit(0);
+    char fileName[MAX_MSG_SIZE];
+    int size;
+    char* file_content = NULL;
+
+        int recv1 = recv(client_socket, fileName, MAX_MSG_SIZE, 0);
+        if (recv1 == 0) {
+            shutdown(client_socket, 2);
+            pthread_exit(0);
+        }
+        int recv2 = recv(client_socket, &size, sizeof(int), 0);
+        if (recv2 == 0) {
+            shutdown(client_socket, 2);
+            pthread_exit(0);
+        }
+        file_content = malloc(size);
+        int recv3 = recv(client_socket,file_content, size , 0);
+        if (recv3 == 0) {
+            shutdown(client_socket, 2);
+            pthread_exit(0);
+        }
+
+        // saves the file
+        char folder[200] = "./recv/";
+        strcat(folder, fileName);
+        int fp = open(folder,  O_WRONLY | O_CREAT, S_IRWXU);
+        printf("RECEIVED FILE CONTENT FROM CLIENT\n");
+        printf("%s\n", file_content);
+        write(fp, file_content, size);
+        close(fp);
+        free(file_content);
+        pthread_exit(0);
 }
 
 /**
@@ -84,9 +122,20 @@ void *messaging_thread_func(void *socket) {
            //printf("After send file_list\n");
 
             recv(client_socket, fileName, MAX_MSG_SIZE, 0); // reception du nom du fichier
-            
+            //Ptit problème !
             server_send_file_socket = accept_client(server_send_file_socket);
             pthread_create(&clients[client_index].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_send_file_socket);
+        }else if (strcmp(send_buffer, "room\n") == 0) {
+          //envoyer la liste au client
+          char* listRooms= malloc(MAX_MSG_SIZE); 
+          list_Rooms(&rooms[NB_MAX_ROOM], &listRooms);
+          printf("LISTE DES ROOMS : \n %s", listRooms);
+          send(client_socket,listRooms,MAX_MSG_SIZE, 0); // envoi list des rooms (nom+port)
+          int num_room= recv(faut que le client envoie qq chose qui nous permettent de retrouver l'indice du salon);
+          //accept client faut mettre condition si taille max atteinte
+          clients[client_index].client_room_socket = accept_client(rooms[num_room].socket_room_server);
+          pthread_create(&clients[client_index].room_thread, NULL, room_thread_func, (void *) (long)clients[client_index].client_room_socket);
+
         } else if (is_private_message(send_buffer, clients) == 1) {
             send_message_to(send_buffer, clients,client_socket);
         } else {
@@ -160,6 +209,22 @@ int main(int argc, char *argv[]) {
     configure_listening_socket(atoi(argv[1]) + 2, &server_send_file_socket, &server_send_file_address);
     bind_and_listen_on(server_send_file_socket, server_send_file_address);
 
+    //creation des rooms
+    for (int w=0;w<NB_MAX_ROOM; w++){
+      rooms[w].num_port=atoi(argv[1]) + 3+w;
+      configure_listening_socket(rooms[w].num_port, &rooms[w].socket_room_server, &rooms[w].room_address);
+      bind_and_listen_on(rooms[w].socket_room_server, rooms[w].room_address);
+      char nom [20];
+      char num[MAX_MSG_SIZE];
+      strcat(nom, "SALON N°");
+      sprintf(num, "%d", w);
+      puts(num);
+      strcat(nom, num);
+      rooms[w].room_name=nom;
+      rooms[w].nb_max_membre = 2;
+    }
+
+
     while (1) {
 
         // decrements the semaphore before accepting a new connection
@@ -169,6 +234,7 @@ int main(int argc, char *argv[]) {
 
         int client_msg_socket = accept_client(server_msg_socket);
         printf("client accepte\n");
+
 
         for (int k = 0; k < MAX_CLIENTS; k++) {
             if (clients[k].client_msg_socket == 0) {

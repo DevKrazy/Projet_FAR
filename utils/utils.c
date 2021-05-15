@@ -41,7 +41,7 @@ int value_in_array(char* val, char** arr) {
 
 /**
  * Gets the files of a given directory and stores the list inside the given buffer.
- * @param dir the directory d_name
+ * @param dir_name the directory d_name
  * @param buffer the buffer where we'll store the file list
  */
 void list_files(char* dir_name, char** buffer) {
