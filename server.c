@@ -50,30 +50,19 @@ void* file_receiving_thread_func(void* socket) {
     int size;
     char* file_content = NULL;
 
-    int recv1 = recv(client_socket, fileName, MAX_MSG_SIZE, 0);
-    if (recv1 == 0) {
-        shutdown(client_socket, 2);
-        pthread_exit(0);
-    }
-    int recv2 = recv(client_socket, &size, sizeof(int), 0);
-    if (recv2 == 0) {
-        shutdown(client_socket, 2);
-        pthread_exit(0);
-    }
+    recv(client_socket, fileName, MAX_MSG_SIZE, 0);
+    recv(client_socket, &size, sizeof(int), 0);
     file_content = malloc(size);
-    int recv3 = recv(client_socket,file_content, size , 0);
-    if (recv3 == 0) {
-        shutdown(client_socket, 2);
-        pthread_exit(0);
-    }
+    recv(client_socket,file_content, size , 0);
 
     // saves the file
-    char folder[200] = "./recv/";
-    strcat(folder, fileName);
-    int fp = open(folder,  O_WRONLY | O_CREAT, S_IRWXU);
-    printf("RECEIVED FILE CONTENT FROM CLIENT\n");
+    char* path = malloc(strlen(SERVER_DIR) + strlen(fileName) + 1);
+    strcat(path, SERVER_DIR);
+    strcat(path, fileName);
+    int fp = open(path,  O_WRONLY | O_CREAT, S_IRWXU);
     printf("%s\n", file_content);
     write(fp, file_content, size);
+    printf("Fichier %s reçu et enregistré.\n", fileName);
     close(fp);
     free(file_content);
     pthread_exit(0);

@@ -45,17 +45,22 @@ void* room_thread_func(void *socket){
 }
 
 void get_file_to_send(int* size_file) {
-    // Demander à l'utilisateur quel fichier afficher
-
+    // Afficher la liste de fichiers
     char* file_list = malloc(1); // malloc(1) because list_files reallocate the memory
     list_files(CLIENT_DIR, &file_list);
-    printf("LISTE DE FICHIERS : \n %s", file_list);
+    printf("Liste des fichiers : \n%s\n", file_list);
 
-    printf("Indiquer le nom du fichier : \n");
+    // Demander le nom du fichier
+    printf("Indiquer le nom du fichier à envoyer : \n");
     fgets(fileName, sizeof(fileName), stdin);
-    //fileName[strlen(fileName) - 1] = '\0';
-    fileName[strcspn(fileName, "\n")] = 0; 
-    int fp = open(fileName,O_RDONLY);
+    fileName[strcspn(fileName, "\n")] = '\0';
+    printf("=%s=\n", fileName);
+
+    // Opens the file and sends and stores it in the "fileName" string
+    char* path = malloc(strlen(CLIENT_DIR) + strlen(fileName) + 1);
+    strcat(path, CLIENT_DIR);
+    strcat(path, fileName);
+    int fp = open(path, O_RDONLY);
     int size=0;
     if (fp == -1){
         printf("Ne peux pas ouvrir le fichier suivant : %s\n", fileName);
@@ -67,6 +72,7 @@ void get_file_to_send(int* size_file) {
         printf("size %d\n",size);
     }
     *size_file=size;
+    free(path);
     close(fp);
 }
 
@@ -94,29 +100,29 @@ void* message_sending_thread_func(void *socket) {
             configure_connecting_socket(argv1, argv2 + 1, &server_file_sending_socket, &server_file_sending_address);
             connect_on(server_file_sending_socket, server_file_sending_address);
             pthread_create(&file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_file_sending_socket);
-            
+
 
         } else if (strcmp(send_buffer, "room\n") == 0){
-          char port_room[5];
-          //fgets du port de la room a rejoindre
-          configure_connecting_socket(argv1, atoi(port_room), &server_room_socket, &server_room_address);
-          connect_on(server_room_socket, server_room_address);
-          pthread_create(&room_thread, NULL, room_thread_func, (void *) (long) server_room_socket);
+            char port_room[5];
+            // TODO: fgets du port de la room a rejoindre
+            configure_connecting_socket(argv1, atoi(port_room), &server_room_socket, &server_room_address);
+            connect_on(server_room_socket, server_room_address);
+            pthread_create(&room_thread, NULL, room_thread_func, (void *) (long) server_room_socket);
 
         }else if (strcmp(send_buffer, "filesrv\n") == 0) {
-            
+
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
             fgets(fileName, MAX_MSG_SIZE, stdin);
-                fileName[strcspn(fileName, "\n")] = 0; 
+            fileName[strcspn(fileName, "\n")] = 0;
 
-                send(server_socket, fileName, MAX_MSG_SIZE, 0); // sends the name of the file
+            send(server_socket, fileName, MAX_MSG_SIZE, 0); // sends the name of the file
             configure_connecting_socket(argv1, argv2 + 2, &recv_file_socket, &recv_file_address);
             connect_on(recv_file_socket, recv_file_address);
             pthread_create(&file_recv_thread, NULL, file_receiving_thread_func, (void *) (long) recv_file_socket);
         } else {
             // the client wants to send a message
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
-            printf("[Vous] : %s", send_buffer);
+            //printf("[Vous] : %s", send_buffer);
         }
     }
 }
@@ -129,7 +135,7 @@ void* file_sending_thread_func(void *socket) {
     bzero(file_content, file_size);
     shutdown(server_socket,2);
     pthread_exit(0);
-    
+
 }
 
 
@@ -137,23 +143,23 @@ void* file_receiving_thread_func(void *socket) {
     int server_socket = (int) (long) socket;
 
 
-        recv(server_socket, &file_size, sizeof(int), 0); // reception taille fichier
-        printf("RECEIVED SIZE FROM SERVER\n");
+    recv(server_socket, &file_size, sizeof(int), 0); // reception taille fichier
+    printf("RECEIVED SIZE FROM SERVER\n");
 
-        char* file_recv_cont = NULL;
-        file_recv_cont = malloc(file_size);
-        recv(server_socket, file_recv_cont,file_size, 0); // reception du contenu du fichier
-        printf("RECEIVED FILE CONTENT FROM SERVER\n");
-        printf("%s\n", file_recv_cont);
+    char* file_recv_cont = NULL;
+    file_recv_cont = malloc(file_size);
+    recv(server_socket, file_recv_cont,file_size, 0); // reception du contenu du fichier
+    printf("RECEIVED FILE CONTENT FROM SERVER\n");
+    printf("%s\n", file_recv_cont);
 
-        char folder[200] = CLIENT_DIR;
-        strcat(folder, fileName);
-        int fp = open(folder,  O_WRONLY | O_CREAT, S_IRWXU);
-        write(fp, file_recv_cont, file_size);
-        close(fp);
-        free(file_recv_cont);
-        shutdown(server_socket,2);
-        pthread_exit(0);
+    char folder[200] = CLIENT_DIR;
+    strcat(folder, fileName);
+    int fp = open(folder,  O_WRONLY | O_CREAT, S_IRWXU);
+    write(fp, file_recv_cont, file_size);
+    close(fp);
+    free(file_recv_cont);
+    shutdown(server_socket,2);
+    pthread_exit(0);
 }
 
 int main(int argc, char *argv[]) {
@@ -170,7 +176,7 @@ int main(int argc, char *argv[]) {
     strcpy(argv1,argv[1]);
     argv2=atoi(argv[2]);
 
-   
+
     int server_messaging_socket;
     struct sockaddr_in server_message_sending_address;
     configure_connecting_socket(argv[1], atoi(argv[2]), &server_messaging_socket, &server_message_sending_address);
@@ -187,7 +193,7 @@ int main(int argc, char *argv[]) {
             terminate_program(0);
         }
         else{
-          printf("%s\n", recv_buffer);
+            printf("%s\n", recv_buffer);
         }
     }
 }
