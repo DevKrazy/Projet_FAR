@@ -83,4 +83,24 @@ void receive_file(int socket, char* folder) {
     free(path);
 }
 
+void get_filename_to_send(char* dir, char** return_filename) {
+    char* file_list = malloc(1); // malloc(1) because list_files reallocate the memory
+    char file_name[MAX_MSG_SIZE];
+
+
+    list_files(dir, &file_list);
+
+    // lists the files
+    printf("Liste des fichiers :\n");
+    printf("%s", file_list);
+
+    // makes the user pick a file to send
+    printf("Choisissez un fichier à envoyer :\n");
+    fgets(file_name, MAX_MSG_SIZE, stdin);
+
+    file_name[strlen(file_name) - 1] = '\0'; // removes the \n
+
+    *return_filename = file_name;
+}
+
 // TODO: move list_files into this file

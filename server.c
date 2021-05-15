@@ -16,7 +16,7 @@
 // TODO: corriger le retour a la ligne en trop quand on reçoit un message (ça vient du strtok surement)
 
 sem_t semaphore;
-//sem_t file_semaphore;
+
 Client clients[MAX_CLIENTS];
 char file_content[MAX_FILE_SIZE];
 char fileName[MAX_MSG_SIZE];

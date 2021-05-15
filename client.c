@@ -20,6 +20,7 @@ pthread_t file_recv_thread;
 //to send file to server
 int server_file_sending_socket;
 struct sockaddr_in server_file_sending_address;
+char* send_filename;
 
 //to recv file from server
 int recv_file_socket;
@@ -53,6 +54,7 @@ void* message_sending_thread_func(void *socket) {
 
         if (strcmp(send_buffer, "file\n") == 0) {
 
+            get_filename_to_send(CLIENT_DIR, &send_filename);
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
             configure_connecting_socket(argv1, argv2 + 1, &server_file_sending_socket, &server_file_sending_address);
             connect_on(server_file_sending_socket, server_file_sending_address);
@@ -81,7 +83,7 @@ void* file_sending_thread_func(void *socket) {
     int server_socket = (int) (long) socket;
 
     // sends the file
-    send_file(server_socket, CLIENT_DIR, "file2.sh");
+    send_file(server_socket, CLIENT_DIR, send_filename);
 
     shutdown(server_socket,2);
     pthread_exit(0);
