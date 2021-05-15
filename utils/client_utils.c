@@ -57,9 +57,7 @@ int connect_on(int socket, struct sockaddr_in address) {
     printf("En attente de l'acceptation du serveur...\n");
 
     char welcome_message[MAX_MSG_SIZE];
-    printf("Before recv\n");
     recv(socket, welcome_message, MAX_MSG_SIZE, 0);
-    printf("After recv\n");
     printf("Message de bienvenue du serveur : %s\n", welcome_message);
 
     return 0;

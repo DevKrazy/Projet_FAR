@@ -9,25 +9,44 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include "utils/headers/utils.h"
+#include "utils/headers/file_utils.h"
 #include "utils/headers/server_utils.h"
 
-// TODO: quand on reçoit un mp : remplacer "server" par le pseudo
 // TODO: utiliser des puts plutot que des printf
 // TODO: corriger le retour a la ligne en trop quand on reçoit un message (ça vient du strtok surement)
 
 sem_t semaphore;
 //sem_t file_semaphore;
-int fake_send_semaphore = 0;
 Client clients[MAX_CLIENTS];
 char file_content[MAX_FILE_SIZE];
 char fileName[MAX_MSG_SIZE];
 int file_size;
+
+//pour enregitrer les fichiers dans le serveur
+int server_file_socket;
+struct sockaddr_in server_file_address;
+int client_file_receiving_socket;
+
+//pour envoyer les fichiers au client
+int server_send_file_socket;
+struct sockaddr_in server_send_file_address;
+
+void* file_sending_thread_func(void* socket);
+void* file_receiving_thread_func(void* socket);
+
+void* file_receiving_thread_func(void* socket) {
+    int client_socket = (int) (long) socket;
+    receive_file(client_socket, SERVER_DIR);
+    shutdown(client_socket, 2);
+    pthread_exit(0);
+}
 
 /**
  * The server's messaging thread.
  * @param socket the server's socket
  * @return
  */
+
 void *messaging_thread_func(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
     int client_socket = (int) (long) socket;
@@ -48,10 +67,26 @@ void *messaging_thread_func(void *socket) {
             shutdown(client_socket, 2);
             pthread_exit(0);
         }
+        if (strcmp(send_buffer, "file\n")==0)
+        {
+            client_file_receiving_socket = accept_client(server_file_socket);
+            pthread_create(&clients[client_index].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) client_file_receiving_socket);
+            
+        }
 
-        if (strcmp(send_buffer, "filesrv\n") == 0) {
+        else if (strcmp(send_buffer, "filesrv\n") == 0) {
+           printf("IN FILESRV\n");
+           char* file_list = malloc(1); // malloc(1) because list_files reallocate the memory
+           list_files(SERVER_DIR, &file_list);
+           printf("LISTE DE FICHIERS : \n %s", file_list);
+           //printf("Before send file_list\n");
+           send(client_socket,file_list,MAX_MSG_SIZE, 0); // envoi list des fichiers
+           //printf("After send file_list\n");
+
             recv(client_socket, fileName, MAX_MSG_SIZE, 0); // reception du nom du fichier
-            fake_send_semaphore += 1;
+            
+            server_send_file_socket = accept_client(server_send_file_socket);
+            pthread_create(&clients[client_index].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_send_file_socket);
         } else if (is_private_message(send_buffer, clients) == 1) {
             send_message_to(send_buffer, clients,client_socket);
         } else {
@@ -61,72 +96,36 @@ void *messaging_thread_func(void *socket) {
     }
 }
 
-void* file_receiving_thread_func(void* socket) {
-    int client_socket = (int) (long) socket;
-    char fileName[MAX_MSG_SIZE];
-    int size;
-    char* file_content = NULL;
 
-    while (1) {
-        int recv1 = recv(client_socket, fileName, MAX_MSG_SIZE, 0);
-        if (recv1 == 0) {
-            shutdown(client_socket, 2);
-            pthread_exit(0);
-        }
-        int recv2 = recv(client_socket, &size, sizeof(int), 0);
-        if (recv2 == 0) {
-            shutdown(client_socket, 2);
-            pthread_exit(0);
-        }
-        file_content = malloc(size);
-        int recv3 = recv(client_socket,file_content, size , 0);
-        if (recv3 == 0) {
-            shutdown(client_socket, 2);
-            pthread_exit(0);
-        }
-
-        // saves the file
-        char folder[200] = "./recv/";
-        strcat(folder, fileName);
-        int fp = open(folder,  O_WRONLY | O_CREAT, S_IRWXU);
-        printf("RECEIVED FILE CONTENT FROM CLIENT\n");
-        printf("%s\n", file_content);
-        write(fp, file_content, size);
-        close(fp);
-        free(file_content);
-    }
-}
 
 void* file_sending_thread_func(void* socket) {
     int client_socket = (int) (long) socket;
-    while (1) {
-        //sem_wait(&file_semaphore);
-        while (fake_send_semaphore == 0) {}
-        fake_send_semaphore -= 1;
         int len = (int) strlen(file_content);
 
-
-        int fp = open(fileName, O_RDONLY);
+        char folder[200] = SERVER_DIR;
+        strcat(folder, fileName);
+        printf("Server is trying to open file: %s\n", folder);
+        int fp = open(folder, O_RDONLY);
         int size=0;
         if (fp == -1){
             printf("Ne peux pas ouvrir le fichier suivant : %s\n", fileName);
+            perror("Erreur lors de l'ouverture du fichier");
         } else {
-            char str[MAX_FILE_SIZE];
-            // Stores the file content
-            size = read(fp,file_content,MAX_FILE_SIZE);
-            file_content[size]=0;
+
+            size = read(fp, file_content, MAX_FILE_SIZE);
+            file_content[size] = 0;
             printf("size %d\n",size);
-            //write(1,file_content,size);
 
         }
         close(fp);
 
-        send(client_socket, &file_size, sizeof(int), 0); // envoi taille fichier
-        send(client_socket, file_content, len, 0); // envoi du contenu du fichier
+        send(client_socket, &size, sizeof(int), 0); // envoi taille fichier
+        printf("taille envoyée\n");
+        send(client_socket, file_content,size, 0); // envoi du contenu du fichier
         printf("file_content: %s\n",file_content);
         printf("Fichier envoyé !\n");
         bzero(file_content, len);
-    }
+        pthread_exit(0);
 }
 
 
@@ -153,11 +152,13 @@ int main(int argc, char *argv[]) {
     configure_listening_socket(atoi(argv[1]), &server_msg_socket, &server_msg_address);
     bind_and_listen_on(server_msg_socket, server_msg_address);
 
-    // configures the server file sending socket
-    int server_file_socket;
-    struct sockaddr_in server_file_address;
+    // configures the server receving file socket
     configure_listening_socket(atoi(argv[1]) + 1, &server_file_socket, &server_file_address);
     bind_and_listen_on(server_file_socket, server_file_address);
+
+    //configures the server sending file socket on port + 2
+    configure_listening_socket(atoi(argv[1]) + 2, &server_send_file_socket, &server_send_file_address);
+    bind_and_listen_on(server_send_file_socket, server_send_file_address);
 
     while (1) {
 
@@ -166,18 +167,14 @@ int main(int argc, char *argv[]) {
         int sem_wait_res = sem_wait(&semaphore); // decrements the semaphore, waits if it is 0
         check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
 
-        int client_file_receiving_socket = accept_client(server_file_socket);
-        int client_file_sending_socket = accept_client(server_file_socket);
         int client_msg_socket = accept_client(server_msg_socket);
+        printf("client accepte\n");
 
         for (int k = 0; k < MAX_CLIENTS; k++) {
             if (clients[k].client_msg_socket == 0) {
                 // we found a client not connected
                 clients[k].client_msg_socket = client_msg_socket;
-                clients[k].client_file_socket = client_file_receiving_socket;
                 pthread_create(&clients[k].messaging_thread, NULL, messaging_thread_func, (void *) (long) client_msg_socket);
-                pthread_create(&clients[k].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) client_file_receiving_socket);
-                pthread_create(&clients[k].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) client_file_sending_socket);
                 printf("Un client connecté de plus ! %d client(s)\n", get_client_count(semaphore));
                 break;
             }

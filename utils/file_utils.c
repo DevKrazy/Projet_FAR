@@ -9,15 +9,14 @@
 
 
 /**
- * Opens, reads and sends a file to a socket. This function removes the '\n' at the end of the filename
+ * Opens, reads and sends a file to a socket.
  * @param socket the socket we want to send the file to
  * @param folder the folder where the file is stored (must end with a /)
  * @param filename the name of the file we want to send
  */
 // TODO read and send chunk by chunk
 void send_file(int socket, char* folder, char* filename) {
-    filename[strlen(filename) - 1] = '\0'; // removes the '\n' at the end of the filename
-    char* path = malloc(strlen(folder) + strlen(filename)); // path to the file
+    char* path = malloc(strlen(folder) + strlen(filename) + 1); // path to the file
 
     // formats the path
     strcat(path, folder); // adds the folder to the path
@@ -32,12 +31,14 @@ void send_file(int socket, char* folder, char* filename) {
 
         // reads the file
         char file_content[MAX_FILE_SIZE];
-        int file_size = read(file, file_content, MAX_FILE_SIZE);
+        int name_size = strlen(filename);
+        printf("Name_size: %d\n", name_size);
+        read(file, file_content, MAX_FILE_SIZE);
 
         // sends the file
-        send(socket, filename, MAX_MSG_SIZE, 0); // sends the filename
-        send(socket, &file_size, sizeof(int), 0); // sends the file size
-        send(socket, file_content, file_size, 0); // sends the file content
+        send(socket, &name_size, sizeof(int), 0); // sends the filename size
+        send(socket, filename, name_size, 0); // sends the filename
+        send(socket, file_content, MAX_FILE_SIZE, 0); // sends the file content
 
         close(file);
         printf("Le fichier %s a été envoyé au socket %d\n", path, socket);
@@ -54,16 +55,17 @@ void send_file(int socket, char* folder, char* filename) {
 void receive_file(int socket, char* folder) {
 
     char filename[MAX_MSG_SIZE];
-    int file_size;
+    int name_size;
     char file_content[MAX_FILE_SIZE];
 
     // receives the file
-    recv(socket, filename, MAX_MSG_SIZE, 0); // receives the filename
-    recv(socket, &file_size, sizeof(int), 0); // receives the file size
-    recv(socket, file_content, file_size, 0); // receives the file content
+    recv(socket, &name_size, sizeof(int), 0); // receives the filename size
+    printf("Received name size: %d\n", name_size);
+    recv(socket, filename, name_size, 0); // receives the filename
+    recv(socket, file_content, MAX_FILE_SIZE, 0); // receives the file content
 
     // formats the path
-    char* path = malloc(strlen(folder) + strlen(filename)); // path to the file
+    char* path = malloc(strlen(folder) + strlen(filename) + 1); // path to the file
     strcat(path, folder);
     strcat(path, filename);
 
@@ -74,7 +76,7 @@ void receive_file(int socket, char* folder) {
         perror("Erreur : ");
     } else {
         // writes the file
-        write(file, file_content, file_size);
+        write(file, file_content, MAX_FILE_SIZE);
         close(file);
         printf("Le fichier %s a été reçu du socket %d et sauvegardé.\n", path, socket);
     }

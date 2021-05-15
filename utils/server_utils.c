@@ -79,11 +79,17 @@ void send_message_to(char *msg, Client clients[], int from_client_socket) {
     char *name = strtok(msg, " "); // extracts the name from the message
     int num_socket = get_socket_by_name(clients, name);
     char nom[MAX_NAME_SIZE];
+    char affichage[MAX_MSG_SIZE+15];
     if (num_socket > 0) {
+        strcat(affichage,"[");
         get_name_by_socket(clients,from_client_socket,nom);
-        send(num_socket,nom,MAX_MSG_SIZE,0);
-        send(num_socket, msg + strlen(name) + 1, MAX_MSG_SIZE, 0); // increments the pointer to remove the name
+        strcat(affichage,nom);
+        strcat(affichage,"] : ");
+        strcat(affichage,msg + strlen(name) + 1);
+        printf("affichage : %s\n", affichage );
+        send(num_socket, affichage, MAX_MSG_SIZE, 0); 
     }
+    bzero(affichage,MAX_MSG_SIZE+15);
 }
 
 /**
@@ -115,19 +121,24 @@ int is_private_message(char *msg, Client clients[]) {
 void broadcast_message (char *msg, Client clients[], int from_client_index) {
     int client_socket = clients[from_client_index].client_msg_socket;
     char nom[12];
+    char aff[MAX_MSG_SIZE+15];
     get_name_by_socket(clients, clients[from_client_index].client_msg_socket, nom);
     printf("pseudo de celui qui envoie %s\n", nom);
+    strcat(aff,"[");
+    strcat(aff,nom);
+    strcat(aff,"] : ");
+    strcat(aff,msg);
     printf("[%s](%d): %s", clients[from_client_index].pseudo, from_client_index, msg);
     for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
         printf("client %d : %d\n", j,  clients[j].client_msg_socket);
         if (clients[j].client_msg_socket != client_socket && clients[j].client_msg_socket != 0) { // envoi
-            send(clients[j].client_msg_socket, nom, MAX_MSG_SIZE, 0);
-            send(clients[j].client_msg_socket, msg, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
+            send(clients[j].client_msg_socket, aff, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
             printf("Envoyé aux clients : %s\n", msg);
         } else {
             printf("On n'envoie pas\n");
         }
     }
+    bzero(aff,MAX_MSG_SIZE+15);
 }
 
 /**
