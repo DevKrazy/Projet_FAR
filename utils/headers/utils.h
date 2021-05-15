@@ -2,8 +2,6 @@
 #define PROJET_FAR_UTILS_H
 #endif
 
-#define NB_MAX_ROOM 3;
-
 #define MAX_MSG_SIZE 10000
 #define MAX_FILE_SIZE 10000
 #define MAX_NAME_SIZE 12

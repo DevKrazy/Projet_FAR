@@ -5,7 +5,6 @@
 #include <semaphore.h>
 #include "utils.h"
 
-#define MAX_THREADS 10
 #define MAX_CLIENTS 3
 
 
