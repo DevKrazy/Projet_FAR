@@ -112,16 +112,25 @@ void *messaging_thread_func(void *socket) {
             //Ptit problème !
             server_send_file_socket = accept_client(server_send_file_socket);
             pthread_create(&clients[client_index].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_send_file_socket);
+
         } else if (strcmp(send_buffer, "room\n") == 0) {
-            //envoyer la liste au client
-            char* listRooms= malloc(MAX_MSG_SIZE);
-            list_Rooms(&rooms[NB_MAX_ROOM], &listRooms);
-            printf("LISTE DES ROOMS : \n %s", listRooms);
-            send(client_socket,listRooms,MAX_MSG_SIZE, 0); // envoi list des rooms (nom+port)
-            //int num_room = recv(faut que le client envoie qq chose qui nous permettent de retrouver l'indice du salon);
-            int num_room = 0;
+
+            // sends the room list to the client
+            char* listRooms = malloc(MAX_MSG_SIZE);
+            list_Rooms(rooms, &listRooms);
+            send(client_socket, listRooms,MAX_MSG_SIZE, 0); // sends the room list
+
+            int room_id;
+            recv(client_socket, &room_id, sizeof(int), 0); // receives the room id
+
+            int port = rooms[room_id].num_port;
+            send(client_socket, &port, sizeof(int), 0); // sends the port number
+
+
+            // send port
+
             //accept client faut mettre condition si taille max atteinte
-            clients[client_index].client_room_socket = accept_client(rooms[num_room].socket_room_server);
+            clients[client_index].client_room_socket = accept_client(rooms[room_id].socket_room_server);
             pthread_create(&clients[client_index].room_thread, NULL, room_thread_func, (void *) (long)clients[client_index].client_room_socket);
 
         } else if (is_private_message(send_buffer, clients) == 1) {
@@ -203,12 +212,10 @@ int main(int argc, char *argv[]) {
         bind_and_listen_on(rooms[w].socket_room_server, rooms[w].room_address);
         char nom[20] = "SALON N°";
         char num[MAX_MSG_SIZE];
-        sprintf(num, "%d\n", w); // writes the "w" value inside the num
-        puts(num);
+        sprintf(num, "%d", w); // writes the "w" value inside the num
         strcat(nom, num);
         strcpy(rooms[w].room_name, nom);
-        rooms[w].nb_max_membre = 2;
-        printf("%s\n", rooms[w].room_name);
+        rooms[w].nb_max_membre = 3;
     }
 
 

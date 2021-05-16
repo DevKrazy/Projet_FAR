@@ -102,14 +102,29 @@ void* message_sending_thread_func(void *socket) {
             pthread_create(&file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_file_sending_socket);
 
 
-        } else if (strcmp(send_buffer, "room\n") == 0){
-            char port_room[5];
-            // TODO: fgets du port de la room a rejoindre
-            configure_connecting_socket(argv1, atoi(port_room), &server_room_socket, &server_room_address);
+        } else if (strcmp(send_buffer, "room\n") == 0) {
+
+            send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
+
+            char listRooms[MAX_MSG_SIZE];
+            recv(server_socket, listRooms, MAX_MSG_SIZE, 0); // receives the room list
+            printf("%s", listRooms);
+
+            // Asks the user for the room port
+            printf("Entrez le numero du salon à rejoindre : \n");
+            fgets(send_buffer, 5, stdin);
+            int room_id = atoi(send_buffer);
+            send(server_socket, &room_id, sizeof(int), 0); // sends the room id
+
+            int port;
+            recv(server_socket, &port, sizeof(int), 0);// receives the port number
+
+            // Configure the room
+            configure_connecting_socket(argv1, port, &server_room_socket, &server_room_address);
             connect_on(server_room_socket, server_room_address);
             pthread_create(&room_thread, NULL, room_thread_func, (void *) (long) server_room_socket);
 
-        }else if (strcmp(send_buffer, "filesrv\n") == 0) {
+        } else if (strcmp(send_buffer, "filesrv\n") == 0) {
 
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
             fgets(fileName, MAX_MSG_SIZE, stdin);

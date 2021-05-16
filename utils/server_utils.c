@@ -118,7 +118,7 @@ int is_private_message(char *msg, Client clients[]) {
  * @param clients the clients array
  * @return 1 if the message is a private message; 0 otherwise
  */
-void broadcast_message (char *msg, Client clients[], int from_client_index) {
+void broadcast_message(char *msg, Client clients[], int from_client_index) {
     int client_socket = clients[from_client_index].client_msg_socket;
     char nom[12];
     char aff[MAX_MSG_SIZE+15];
@@ -208,16 +208,18 @@ int accept_client(int server_socket) {
     return client_socket;
 }
 
-void list_Rooms (Room rooms [], char **list){
-  strcat(*list,"Liste des Rooms (nom + port):\n");
-  for(int r=0;r<NB_MAX_ROOM;r++){
+void list_Rooms (Room rooms[], char **list){
+  strcat(*list,"Liste des Rooms :\n");
+  for(int r = 0; r < NB_MAX_ROOM; r++) {
     strcat(*list, "- ");
+    char room_id[5];
+    sprintf(room_id, "[%d] ", r);
+    strcat(*list, room_id);
     strcat(*list, "Nom: ");
     strcat(*list, rooms[r].room_name);
-    strcat(*list, " Port: ");
-    char port[MAX_MSG_SIZE];
-    sprintf(port, "%d",rooms[r].num_port );
-    puts(port);
+    strcat(*list, " port: ");
+    char port[5];
+    sprintf(port, "%d\n",rooms[r].num_port );
     strcat(*list,port);
   }
 }
