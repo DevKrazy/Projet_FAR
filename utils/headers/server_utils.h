@@ -1,6 +1,6 @@
 #ifndef PROJET_FAR_SERVER_UTILS_H
 #define PROJET_FAR_SERVER_UTILS_H
-#endif
+
 
 #include <semaphore.h>
 #include "utils.h"
@@ -23,6 +23,7 @@ struct Client {
     int client_msg_socket;
     int client_file_socket;
     int client_room_socket;
+    int room_id;
     char pseudo[MAX_NAME_SIZE];
     pthread_t messaging_thread;
     pthread_t file_receiving_thread;
@@ -44,6 +45,8 @@ int is_private_message(char *msg, Client clients[]);
 
 void broadcast_message (char *msg, Client clients[], int from_client_index);
 
+void broadcast_message_in_room(char* msg, Client clients[], Room rooms[], int from_client_index);
+
 int configure_listening_socket(int port, int* socket_return, struct sockaddr_in *addr_return);
 
 int bind_and_listen_on(int socket, struct sockaddr_in address);
@@ -51,3 +54,5 @@ int bind_and_listen_on(int socket, struct sockaddr_in address);
 int accept_client(int server_socket);
 
 void list_Rooms (Room rooms [], char **list);
+
+#endif

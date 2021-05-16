@@ -141,6 +141,10 @@ void broadcast_message(char *msg, Client clients[], int from_client_index) {
     bzero(aff,MAX_MSG_SIZE+15);
 }
 
+void broadcast_message_in_room(char* msg, Client clients[], Room rooms[], int from_client_index) {
+    Room client_room = rooms[clients[from_client_index].room_id];
+}
+
 /**
  * Configures the server's socket and updates the socket_return and addr_return values with the
  * created socket and the created address.

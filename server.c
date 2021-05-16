@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include "utils/headers/utils.h"
 #include "utils/headers/server_utils.h"
+#include "utils/headers/rooms_utils.h"
 
 
 // TODO: utiliser des puts plutot que des printf
@@ -118,7 +119,7 @@ void *messaging_thread_func(void *socket) {
             // sends the room list to the client
             char* listRooms = malloc(MAX_MSG_SIZE);
             list_Rooms(rooms, &listRooms);
-            send(client_socket, listRooms,MAX_MSG_SIZE, 0); // sends the room list
+            send(client_socket, listRooms, MAX_MSG_SIZE, 0); // sends the room list
 
             int room_id;
             recv(client_socket, &room_id, sizeof(int), 0); // receives the room id
@@ -127,11 +128,12 @@ void *messaging_thread_func(void *socket) {
             send(client_socket, &port, sizeof(int), 0); // sends the port number
 
 
-            // send port
-
-            //accept client faut mettre condition si taille max atteinte
-            clients[client_index].client_room_socket = accept_client(rooms[room_id].socket_room_server);
+            // accepts the client
+            // TODO: vérifier qu'il y a assez de place
+            join_room(client_index, room_id, clients, rooms);
             pthread_create(&clients[client_index].room_thread, NULL, room_thread_func, (void *) (long)clients[client_index].client_room_socket);
+
+        } else if (strcmp(send_buffer, "leave\n") == 0) {
 
         } else if (is_private_message(send_buffer, clients) == 1) {
             send_message_to(send_buffer, clients,client_socket);
@@ -227,7 +229,7 @@ int main(int argc, char *argv[]) {
         check_error(sem_wait_res, "Erreur lors du sem_wait.\n");
 
         int client_msg_socket = accept_client(server_msg_socket);
-        printf("client accepte\n");
+        printf("Client accepté\n");
 
 
         for (int k = 0; k < MAX_CLIENTS; k++) {
