@@ -11,15 +11,18 @@
 #include "utils/headers/client_utils.h"
 #include <fcntl.h>
 
+// TODO : vérifier qu'un client est dans une room avant d'envoyer le emssage
+// TODO : ne pas envoyer le emssage de room au client lui-même
+// TODO : leave une room
+// TODO : voir les rooms dans lesquelles on est
+// TODO : create room
+//todo : premier client peut pas rejoindre room
+
 // Threads
 pthread_t message_sending_thread;
 pthread_t file_sending_thread;
 pthread_t file_recv_thread;
-pthread_t room_thread;
 
-//pour les salons
-int server_room_socket;
-struct sockaddr_in server_room_address;
 
 //to send file to server
 int server_file_sending_socket;
@@ -36,31 +39,26 @@ int argv2;
 char file_content[MAX_FILE_SIZE];
 char fileName[MAX_MSG_SIZE];
 int file_size;
+
 void* file_sending_thread_func(void *socket);
 void* file_receiving_thread_func(void *socket);
-void* room_thread_func(void *socket);
 
-void* room_thread_func(void *socket){
-
-}
 
 void get_file_to_send(int* size_file) {
-    // Afficher la liste de fichiers
+    // Demander à l'utilisateur quel fichier afficher
+
     char* file_list = malloc(1); // malloc(1) because list_files reallocate the memory
     list_files(CLIENT_DIR, &file_list);
-    printf("Liste des fichiers : \n%s\n", file_list);
+    printf("LISTE DE FICHIERS : \n %s", file_list);
 
-    // Demander le nom du fichier
-    printf("Indiquer le nom du fichier à envoyer : \n");
+    printf("Indiquer le nom du fichier : \n");
     fgets(fileName, sizeof(fileName), stdin);
-    fileName[strcspn(fileName, "\n")] = '\0';
-    printf("=%s=\n", fileName);
+    fileName[strlen(fileName) - 1] = '\0';
+    char nomTot[40];
+    strcat(nomTot,CLIENT_DIR);
+    strcat(nomTot,fileName);
 
-    // Opens the file and sends and stores it in the "fileName" string
-    char* path = malloc(strlen(CLIENT_DIR) + strlen(fileName) + 1);
-    strcat(path, CLIENT_DIR);
-    strcat(path, fileName);
-    int fp = open(path, O_RDONLY);
+    int fp = open(nomTot,O_RDONLY);
     int size=0;
     if (fp == -1){
         printf("Ne peux pas ouvrir le fichier suivant : %s\n", fileName);
@@ -69,10 +67,10 @@ void get_file_to_send(int* size_file) {
         // Stores the file content
         size = read(fp,file_content,MAX_FILE_SIZE);
         file_content[size]=0;
-        printf("size %d\n",size);
+
     }
+    bzero(nomTot, 40);
     *size_file=size;
-    free(path);
     close(fp);
 }
 
@@ -93,7 +91,7 @@ void* message_sending_thread_func(void *socket) {
         // gets what the client wrote in the CLI
         fgets(send_buffer, MAX_MSG_SIZE, stdin);
 
-        if (strcmp(send_buffer, "file\n") == 0) {
+        if (strcmp(send_buffer, "/file\n") == 0) {
             // the client wants to send a file
             get_file_to_send(&file_size);
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
@@ -102,8 +100,8 @@ void* message_sending_thread_func(void *socket) {
             pthread_create(&file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_file_sending_socket);
 
 
-        } else if (strcmp(send_buffer, "room\n") == 0) {
-
+        } else if (strcmp(send_buffer, "/room\n") == 0) {          
+          
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
 
             char listRooms[MAX_MSG_SIZE];
@@ -115,16 +113,8 @@ void* message_sending_thread_func(void *socket) {
             fgets(send_buffer, 5, stdin);
             int room_id = atoi(send_buffer);
             send(server_socket, &room_id, sizeof(int), 0); // sends the room id
-
-            int port;
-            recv(server_socket, &port, sizeof(int), 0);// receives the port number
-
-            // Configure the room
-            configure_connecting_socket(argv1, port, &server_room_socket, &server_room_address);
-            connect_on(server_room_socket, server_room_address);
-            pthread_create(&room_thread, NULL, room_thread_func, (void *) (long) server_room_socket);
-
-        } else if (strcmp(send_buffer, "filesrv\n") == 0) {
+            
+        } else if (strcmp(send_buffer, "/filesrv\n") == 0) {
 
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
             fgets(fileName, MAX_MSG_SIZE, stdin);

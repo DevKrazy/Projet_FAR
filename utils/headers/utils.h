@@ -19,3 +19,10 @@ void printf_red(char *message);
 int value_in_array(char* val, char** arr);
 
 void list_files(char* dir_name, char** buffer);
+
+int get_last_tty();
+
+FILE* new_tty();
+
+int getCommandId(char* command);
+
