@@ -147,19 +147,19 @@ void broadcast_message(char *msg, Client clients[], int from_client_index) {
     char nom[12];
     char aff[MAX_MSG_SIZE+15];
     get_name_by_socket(clients, clients[from_client_index].client_msg_socket, nom);
-    printf("pseudo de celui qui envoie %s\n", nom);
+    printf("Pseudo de l'emetteur du message %s\n", nom);
     strcat(aff,"[");
     strcat(aff,nom);
     strcat(aff,"] : ");
     strcat(aff,msg);
     printf("[%s](%d): %s", clients[from_client_index].pseudo, from_client_index, msg);
     for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
-        printf("client %d : %d\n", j,  clients[j].client_msg_socket);
+        printf("- client : %d, socket : %d\n", j,  clients[j].client_msg_socket);
         if (clients[j].client_msg_socket != client_socket && clients[j].client_msg_socket != 0) { // envoi
             send(clients[j].client_msg_socket, aff, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
-            printf("Envoyé aux clients : %s\n", msg);
+            printf("-----> envoyé au client : %s\n", msg);
         } else {
-            printf("On n'envoie pas\n");
+            printf("--X--> on n'envoie pas\n");
         }
     }
     bzero(aff,MAX_MSG_SIZE+15);

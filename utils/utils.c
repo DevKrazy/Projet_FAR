@@ -54,12 +54,13 @@ void list_files(char* dir_name, char** buffer) {
         while (dir_entry = readdir (dir_stream)) {
             if(strcmp(dir_entry->d_name, ".") != 0 && strcmp(dir_entry->d_name, "..") != 0) {
                 // does not display the . and .. files
-                realloc_size += strlen(dir_entry->d_name) + 2; // +2 for the \0 and the \n
+                realloc_size += strlen(dir_entry->d_name) + 2; // +2 for the \n and the \0
                 *buffer = realloc(*buffer, realloc_size);
                 strcat(*buffer, dir_entry->d_name);
                 strcat(*buffer, "\n");
             }
         }
+        strcat(*buffer, "\0");
         (void) closedir(dir_stream);
     } else {
         perror ("Ne peux pas ouvrir le répertoire");

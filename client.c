@@ -99,20 +99,18 @@ void* message_sending_thread_func(void *socket) {
             connect_on(server_file_sending_socket, server_file_sending_address);
             pthread_create(&file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_file_sending_socket);
 
-
         } else if (strcmp(send_buffer, "/room\n") == 0) {          
           
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
-
-            char listRooms[MAX_MSG_SIZE];
-            recv(server_socket, listRooms, MAX_MSG_SIZE, 0); // receives the room list
-            printf("%s", listRooms);
+            recv(server_socket, send_buffer, MAX_MSG_SIZE, 0); // receives the room list
+            printf("%s\n", send_buffer);
 
             // Asks the user for the room port
-            printf("Entrez le numero du salon à rejoindre : \n");
+            printf("Entrez le n° du salon à rejoindre : \n");
             fgets(send_buffer, 5, stdin);
             int room_id = atoi(send_buffer);
             send(server_socket, &room_id, sizeof(int), 0); // sends the room id
+            printf("Vous avez rejoint le salon %d.\n", room_id);
             
         } else if (strcmp(send_buffer, "/filesrv\n") == 0) {
 
@@ -127,7 +125,6 @@ void* message_sending_thread_func(void *socket) {
         } else {
             // the client wants to send a message
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
-            //printf("[Vous] : %s", send_buffer);
         }
     }
 }

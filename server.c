@@ -114,7 +114,6 @@ void *messaging_thread_func(void *socket) {
             int room_id;
             recv(client_socket, &room_id, sizeof(int), 0); // receives the room id
 
-            // accepts the client
             if (is_room_complete(room_id, rooms) == 0){ //si la room n'est pas complete
               join_room(client_index, room_id, clients, rooms);
             }
