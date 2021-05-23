@@ -18,6 +18,7 @@ void check_error(int check, char *err_msg) {
     }
 }
 
+
 /**
  * Terminates the current program and prints a message.
  * @param code the return code
@@ -57,11 +58,72 @@ void list_files(char* dir_name, char** buffer) {
                 *buffer = realloc(*buffer, realloc_size);
                 strcat(*buffer, dir_entry->d_name);
                 strcat(*buffer, "\n");
-                printf("list_files filename : %s", *buffer);
             }
         }
         (void) closedir(dir_stream);
     } else {
         perror ("Ne peux pas ouvrir le répertoire");
     }
+}
+
+// Retourne le dernier terminal
+int get_last_tty() {
+  FILE *fp;
+  char path[1035];
+  fp = popen("/bin/ls /dev/pts", "r");
+  if (fp == NULL) {
+    printf("Impossible d'exécuter la commande\n" );
+    exit(1);
+  }
+  int i = INT_MIN;
+  while (fgets(path, sizeof(path)-1, fp) != NULL) {
+    if(strcmp(path,"ptmx")!=0){
+      int tty = atoi(path);
+      if(tty > i) i = tty;
+    }
+  }
+
+  pclose(fp);
+  return i;
+}
+
+// Créé un nouveau terminal
+FILE* new_tty() {
+  pthread_mutex_t the_mutex;  
+  pthread_mutex_init(&the_mutex,0);
+  pthread_mutex_lock(&the_mutex);
+  system("gnome-terminal"); 
+  sleep(1);
+  char *tty_name = ttyname(STDIN_FILENO);
+  int ltty = get_last_tty();
+  char str[2];
+  sprintf(str,"%d",ltty);
+  int i;
+  for(i = strlen(tty_name)-1; i >= 0; i--) {
+    if(tty_name[i] == '/') break;
+  }
+  tty_name[i+1] = '\0';  
+  strcat(tty_name,str);  
+  FILE *fp = fopen(tty_name,"wb+");
+  pthread_mutex_unlock(&the_mutex);
+  pthread_mutex_destroy(&the_mutex);
+  return fp;
+}
+
+int getCommandId(char* command) {
+  if (strcmp(command, "/fin\n") == 0){
+    return 1;
+  }
+  else if (strcmp(command, "/file\n") == 0){
+    return 2;
+  }
+  else if (strcmp(command, "/filesrv\n") == 0){
+    return 3;
+  }
+  else if (strcmp(command, "/room\n") == 0){
+    return 4;
+  }
+  else{
+    return 0;
+  }
 }
