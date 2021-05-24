@@ -44,6 +44,7 @@ char file_content[MAX_FILE_SIZE];
 char fileName[MAX_MSG_SIZE];
 int file_size;
 
+// TODO bouger ces fonctions dans un header
 void* file_sending_thread_func(void *socket);
 void* file_receiving_thread_func(void *socket);
 
@@ -77,7 +78,6 @@ void get_file_to_send(int* size_file) {
     *size_file=size;
     close(fp);
 }
-
 
 void* message_sending_thread_func(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
@@ -119,45 +119,30 @@ void* message_sending_thread_func(void *socket) {
             send(server_room_socket, &room_id, sizeof(int), 0); // sends the room id
 
             // Asks the user what he wants to do with the selected room
-            list_Choices();
+            print_room_actions();
             printf("Que souhaitez-vous faire ?\n");
             fgets(send_buffer, MAX_MSG_SIZE, stdin);
-            int action_id = getCommandChoice(send_buffer);
-            printf("Command ID : %d\n", action_id);
+            int action_id = get_action_id(send_buffer);
             send(server_room_socket, &action_id, sizeof(int), 0); // sends the action id
 
             switch (action_id) {
-                case 2: // modify room
+                case 2: { // modify room
+
+                    // Asks the user what he wants to modify
+                    print_room_modification_actions();
+                    fgets(send_buffer, sizeof(int), stdin);
+                    int modif_action_id = atoi(send_buffer);
+                    send(server_room_socket, &action_id, sizeof(int), 0); // sends the modification action id
+
+                    client_room_modification(server_room_socket, modif_action_id);
                     break;
-                default: // all other cases (just need the server's response)
+                }
+                default: { // all other cases (just need the server's response)
                     recv(server_room_socket, send_buffer, MAX_MSG_SIZE, 0); // receives the server's response
                     printf("%s\n", send_buffer);
                     break;
+                }
             }
-
-            /*
-            switch(action_id) {
-                case 0:
-                    printf("Vous avez quitté le salon n° %d.\n", rooms);
-                    break;
-                case 1: // create room
-                    client_room_creation(server_room_socket);
-                    break;
-                case 2: // edit room
-                    printf("--Modification du Salon--\n");
-                    modification_Room(server_room_socket, action_id);
-                    break;
-                case 3: // join room
-                    printf("Vous avez rejoint le salon n° %d.\n", rooms);
-                    break;
-                case 4: // delete room
-                    printf("Vous avez supprimé le salon n° %d.\n", rooms);
-                    break;
-                default: // bad command id
-                    printf("Veuillez entrer un n° compris entre 0 et 4 !\n");
-                    break;
-            }
-             */
 
             sleep(1);
             shutdown(server_room_socket,2);
@@ -187,6 +172,7 @@ void* message_sending_thread_func(void *socket) {
         // TODO: free send_buffer ? (vérifier que ça casse rien)
     }
 }
+
 void* file_sending_thread_func(void *socket) {
     int server_socket = (int) (long) socket;
     send(server_socket, fileName, MAX_MSG_SIZE, 0); // sends file name
@@ -196,9 +182,7 @@ void* file_sending_thread_func(void *socket) {
     bzero(file_content, file_size);
     shutdown(server_socket,2);
     pthread_exit(0);
-
 }
-
 
 void* file_receiving_thread_func(void *socket) {
     int server_socket = (int) (long) socket;

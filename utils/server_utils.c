@@ -355,6 +355,11 @@ int is_in_room(int client_id, int id_room, Client clients[]){
     return 0;
 }
 
+/**
+ * @brief Manages the creation of a room on the server's side. This
+ * function receives the necessary information in order to create a room.
+ * @param socket the socket from which the information will be received
+ */
 void server_room_creation(int socket, Room rooms[]) {
     printf("## Création d'un salon\n");
     char room_name[20];
@@ -372,7 +377,7 @@ void server_room_creation(int socket, Room rooms[]) {
             rooms[i].created = 1;
             rooms[i].nb_max_membre = max_members;
             strcpy(rooms[i].room_name, room_name);
-            strcpy(response, "Salon créé !!!");
+            strcpy(response, "Salon créé.");
             send(socket, response, MAX_MSG_SIZE, 0);
             // NE PAS METTRE DE PRINT ICI SINON ÇA BLOQUE
             return;
@@ -400,40 +405,33 @@ void delete_room(int room_id, Client clients[], Room rooms[]) {
     printf("Salon n°%d (%s) supprimé !\n", room_id, rooms[room_id].room_name);
 }
 
-
-void modify_room(int socket, int choice, int index, Room rooms[]) {
+/**
+ * @brief Manages the modification of a room on the server's side. This
+ * function receives the necessary information in order to modify a room and
+ * sends everything to the server.
+ * @param socket the socket from which the information will be received
+ */
+void server_room_modification(int socket, int choice, int index, Room *rooms) {
     printf("## Modification du salon n° %d.\n", index);
+    char response[MAX_MSG_SIZE];
+
     switch(choice){
-        case 1: {
-            char name[20];
-            recv(socket, name, MAX_MSG_SIZE, 0);
-            strcpy(rooms[index].room_name, name);
-            printf("Nouveau nom : %s\n", name);
+        case 1: { // modifies the room's name
+            char room_name[20];
+            recv(socket, room_name, 20, 0);
+            printf("Nom du salon : %s\n", room_name);
+            strcpy(response, "Nom du salon modifié.");
             break;
         }
-        case 2: {
-            printf("-- Modification du nombre max de membres --\n");
+        case 2: { // modifies the room's max members number
             int members;
             recv(socket, &members, sizeof(int), 0);
             rooms[index].nb_max_membre = members;
-            printf("Nouveau nb. max. de membres : %s\n", members);
+            strcpy(response, "Nb. max. de membres du salon modifié.");
             break;
         }
-            /*
-            case 3:
-                printf("-- Modification du nom --\n");
-                char nom[20];
-                recv(socket, nom, MAX_MSG_SIZE, 0);
-                strcpy(rooms[index].room_name, nom);
-
-                printf("-- Modification du nombre max de membres --\n");
-                int max_members;
-                recv(socket,&max_members,sizeof(int), 0);
-                rooms[index].nb_max_membre = max_members;
-                break;
-                */
         default:
-            printf("Aucune Modification effectuée (mauvaise commande).\n");
+            strcpy(response, "Aucune modification effectuée (mauvaise commande).\n");
             break;
     }
 }

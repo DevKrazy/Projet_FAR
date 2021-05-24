@@ -121,7 +121,7 @@ void *messaging_thread_func(void *socket) {
             recv(clients[client_index].client_file_receiving_socket, &action_id, sizeof(int), 0);
 
             switch (action_id) {
-                case 0: // join
+                case 0: { // join
                     if (is_in_room(client_index, room_id, clients) == 0) {
                         join_room(client_index, room_id, clients, rooms);
                         strcpy(send_buffer, "Vous avez rejoint le salon.");
@@ -129,7 +129,8 @@ void *messaging_thread_func(void *socket) {
                         strcpy(send_buffer, "Impossible de rejoindre le salon, vous êtes déjà dedans.");
                     }
                     break;
-                case 1: // leave
+                }
+                case 1: { // leave
                     if (is_in_room(client_index, room_id, clients) == 1) {
                         leave_room(client_index, room_id, clients, rooms);
                         strcpy(send_buffer, "Vous avez quitté le salon.");
@@ -137,12 +138,21 @@ void *messaging_thread_func(void *socket) {
                         strcpy(send_buffer, "Impossible de quitter le salon, vous n'êtes pas dedans.");
                     }
                     break;
-                case 2: // modify
+                }
+                case 2: { // modify
+
+                    // Receives the modification action id
+                    int modif_action_id;
+                    recv(clients[client_index].client_file_receiving_socket, &modif_action_id, sizeof(int), 0);
+
+                    server_room_modification(clients[client_index].client_file_receiving_socket, modif_action_id, room_id, rooms);
                     break;
-                case 3: // delete
+                }
+                case 3: { // delete
                     delete_room(room_id, clients, rooms);
                     strcpy(send_buffer, "Salon supprimé !");
                     break;
+                }
                 default: // bad command
                     strcpy(send_buffer, "Mauvaise commande...");
                     break;
@@ -151,46 +161,6 @@ void *messaging_thread_func(void *socket) {
             // sends the response to the client
             send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
 
-
-            /*
-            switch (action_id) {
-                case 0:
-                    printf("--Quitter un salon--\n");
-                    leave_room(client_index, rooms, clients,rooms);
-                    break;
-                case 1:
-                    printf("--Creation du Salon--\n");
-                    break;
-                case 2:
-                    printf("--Modification du Salon--\n");
-
-                    int choice;
-                    recv(clients[client_index].client_file_receiving_socket,&choice,sizeof(int), 0);
-
-                    modify_room(clients[client_index].client_file_receiving_socket,choice,rooms,rooms);
-
-                    break;
-                case 3:
-                    printf("--Rejoindre un Salon--\n");
-                    // accepts the client
-                    if (is_room_complete(rooms, rooms) == 0){ //si la room n'est pas complete
-                        join_room(client_index, rooms, clients, rooms);
-                    }
-                    break;
-                case 4:
-                    printf("--Supprimer un Salon--\n");
-                    send(clients[client_index].client_file_receiving_socket, listRooms, MAX_MSG_SIZE, 0); // sends the room list
-
-                    int id_room;
-                    recv(clients[client_index].client_file_receiving_socket, &id_room, sizeof(int), 0); // receives the room id
-
-                    //delete_room(rooms,clients,rooms,tab_rooms);
-                    break;
-                default:
-                    printf("--Pas le bon numéro --\n");
-                    break;
-            }
-             */
         } else if (strcmp(send_buffer, "/room create\n") == 0) {
 
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);

@@ -8,10 +8,10 @@ int connect_on(int socket, struct sockaddr_in address);
 
 void client_room_creation(int socket);
 
-void Modification_choice();
+void print_room_modification_actions();
 
-void modification_Room(int socket, int choix);
+void client_room_modification(int socket, int choice);
 
-void list_Choices ();
+void print_room_actions ();
 
-int getCommandChoice(char* command);
+int get_action_id(char* command);

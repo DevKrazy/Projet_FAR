@@ -59,7 +59,7 @@ void server_room_creation(int socket, Room rooms[]);
 
 void delete_room(int room_id, Client clients[], Room rooms[]);
 
-void modify_room(int socket, int choice, int index, Room rooms[]);
+void server_room_modification(int socket, int choice, int index, Room *rooms);
 
 void join_room(int client_id, int room_id, Client clients[], Room rooms[]);
 
