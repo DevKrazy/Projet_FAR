@@ -151,17 +151,17 @@ void modification_Room(int socket, int choix) {
 }
 
 int getCommandChoice(char* command) {
-    if (strcmp(command, "/create\n") == 0){
+    if (strcmp(command, "/join\n") == 0) {
+        return 0;
+    }
+    else if (strcmp(command, "/leave\n") == 0) {
         return 1;
     }
-    else if (strcmp(command, "/modify\n") == 0){
+    else if (strcmp(command, "/modify\n") == 0) {
         return 2;
     }
-    else if (strcmp(command, "/join\n") == 0){
+    else if (strcmp(command, "/delete\n") == 0) {
         return 3;
-    }
-    else if (strcmp(command, "/delete\n") == 0){
-        return 4;
     }
     else{
         return 0;

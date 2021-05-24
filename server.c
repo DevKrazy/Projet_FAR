@@ -68,7 +68,7 @@ void *messaging_thread_func(void *socket) {
     int client_socket = (int) (long) socket;
     int client_index = get_index_by_socket(clients, client_socket);
     for (int z=0; z<NB_MAX_ROOM; z++){
-        clients[client_index].room_id[z]=0;
+        clients[client_index].rooms[z]=0;
     }
 
     // receives and adds the client's name to its structure
@@ -105,26 +105,44 @@ void *messaging_thread_func(void *socket) {
 
         } else if (strcmp(send_buffer, "/room\n") == 0) {
 
-            printf("on est dans server room\n");
-            //recuperation et envoi de la liste des rooms
-
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
-            printf("apres connexion client server\n");
-            char listRooms[MAX_MSG_SIZE];
-            list_Rooms(rooms,listRooms);
-            send(clients[client_index].client_file_receiving_socket,listRooms,MAX_MSG_SIZE, 0);
 
-            printf("--Reception room_id--\n");
+            // sends the room list
+            list_Rooms(rooms, send_buffer);
+            send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
+
+            // receives the room id
+            printf("--Reception rooms--\n");
             int room_id;
             recv(clients[client_index].client_file_receiving_socket, &room_id, sizeof(int), 0);
 
-            int rcv_command;
-            recv(clients[client_index].client_file_receiving_socket, &rcv_command, sizeof(int), 0);
+            // receives the action id
+            int action_id;
+            recv(clients[client_index].client_file_receiving_socket, &action_id, sizeof(int), 0);
 
-            switch (rcv_command) {
+            switch (action_id) {
+                case 0: // join
+                    break;
+                case 1: // leave
+                    break;
+                case 2: // modify
+                    break;
+                case 3: // delete
+                    delete_room(room_id, clients, rooms);
+                    strcpy(send_buffer, "Salon supprimé !");
+                    send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
+                    break;
+                default: // bad command
+                    strcpy(send_buffer, "Mauvaise commande...");
+                    send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
+                    break;
+            }
+
+            /*
+            switch (action_id) {
                 case 0:
                     printf("--Quitter un salon--\n");
-                    leave_room(client_index,room_id, clients,rooms);
+                    leave_room(client_index, rooms, clients,rooms);
                     break;
                 case 1:
                     printf("--Creation du Salon--\n");
@@ -135,14 +153,14 @@ void *messaging_thread_func(void *socket) {
                     int choice;
                     recv(clients[client_index].client_file_receiving_socket,&choice,sizeof(int), 0);
 
-                    modify_room(clients[client_index].client_file_receiving_socket,choice,room_id,rooms);
+                    modify_room(clients[client_index].client_file_receiving_socket,choice,rooms,rooms);
 
                     break;
                 case 3:
                     printf("--Rejoindre un Salon--\n");
                     // accepts the client
-                    if (is_room_complete(room_id, rooms) == 0){ //si la room n'est pas complete
-                        join_room(client_index, room_id, clients, rooms);
+                    if (is_room_complete(rooms, rooms) == 0){ //si la room n'est pas complete
+                        join_room(client_index, rooms, clients, rooms);
                     }
                     break;
                 case 4:
@@ -152,17 +170,22 @@ void *messaging_thread_func(void *socket) {
                     int id_room;
                     recv(clients[client_index].client_file_receiving_socket, &id_room, sizeof(int), 0); // receives the room id
 
-                    //delete_room(room_id,clients,rooms,tab_rooms);
+                    //delete_room(rooms,clients,rooms,tab_rooms);
                     break;
                 default:
                     printf("--Pas le bon numéro --\n");
                     break;
             }
+             */
         } else if (strcmp(send_buffer, "/room create\n") == 0) {
+
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
             server_room_creation(clients[client_index].client_file_receiving_socket, rooms);
-        }else { // the client wants to send a message
+
+        } else { // the client wants to send a message
+
             int room_id = get_room_id_from_message(send_buffer);
+
             if (room_id != -1 && is_in_room(client_index,room_id, clients)==1) { // sends the message in a room
                 broadcast_message_in_room(send_buffer, clients, rooms, room_id, client_index);
 

@@ -98,36 +98,47 @@ void* message_sending_thread_func(void *socket) {
         if (strcmp(send_buffer, "/file\n") == 0) {
             // the client wants to send a file
             get_file_to_send(&file_size);
-            send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
+            send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
             configure_connecting_socket(argv1, argv2 + 1, &server_file_sending_socket, &server_file_sending_address);
             connect_on(server_file_sending_socket, server_file_sending_address);
             pthread_create(&file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_file_sending_socket);
 
         } else if (strcmp(send_buffer, "/room\n") == 0) {
 
-            send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server 
-
+            send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
             configure_connecting_socket(argv1, argv2 + 1, &server_room_socket, &server_room_address);
             connect_on(server_room_socket, server_room_address);
 
             recv(server_room_socket,send_buffer, MAX_MSG_SIZE, 0); // receives the room list
             printf("%s\n", send_buffer);
 
-            // Asks the user for the room port
+            // Asks the user for the room id
             printf("Avec quel salon souhaitez-vous interagir ? \n");
             fgets(send_buffer, MAX_MSG_SIZE, stdin);
             int room_id = atoi(send_buffer);
             send(server_room_socket, &room_id, sizeof(int), 0); // sends the room id
 
+            // Asks the user what he wants to do with the selected room
             list_Choices();
             printf("Que souhaitez-vous faire ?\n");
             fgets(send_buffer, MAX_MSG_SIZE, stdin);
             int action_id = getCommandChoice(send_buffer);
             printf("Command ID : %d\n", action_id);
             send(server_room_socket, &action_id, sizeof(int), 0); // sends the action id
+
+            switch (action_id) {
+                case 2: // modify room
+                    break;
+                default: // all other cases (just need the server's response)
+                    recv(server_room_socket, send_buffer, MAX_MSG_SIZE, 0); // receives the server's response
+                    printf("%s\n", send_buffer);
+                    break;
+            }
+
+            /*
             switch(action_id) {
                 case 0:
-                    printf("Vous avez quitté le salon n° %d.\n", room_id);
+                    printf("Vous avez quitté le salon n° %d.\n", rooms);
                     break;
                 case 1: // create room
                     client_room_creation(server_room_socket);
@@ -137,25 +148,26 @@ void* message_sending_thread_func(void *socket) {
                     modification_Room(server_room_socket, action_id);
                     break;
                 case 3: // join room
-                    printf("Vous avez rejoint le salon n° %d.\n", room_id);
+                    printf("Vous avez rejoint le salon n° %d.\n", rooms);
                     break;
                 case 4: // delete room
-                    printf("Vous avez supprimé le salon n° %d.\n", room_id);
+                    printf("Vous avez supprimé le salon n° %d.\n", rooms);
                     break;
                 default: // bad command id
                     printf("Veuillez entrer un n° compris entre 0 et 4 !\n");
                     break;
             }
+             */
+
             sleep(1);
-
-
-            printf("avant shutdown room\n");
             shutdown(server_room_socket,2);
 
         } else if (strcmp(send_buffer, "/room create\n") == 0) {
+
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
             configure_connecting_socket(argv1, argv2 + 1, &server_room_socket, &server_room_address);
             connect_on(server_room_socket, server_room_address);
+
             client_room_creation(server_room_socket);
 
         } else if (strcmp(send_buffer, "/filesrv\n") == 0) {

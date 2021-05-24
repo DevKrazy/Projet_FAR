@@ -23,13 +23,12 @@ struct Client {
     int client_file_receiving_socket;
     int client_file_send_socket;
 
-    int room_id[NB_MAX_ROOM];
+    int rooms[NB_MAX_ROOM];
     char pseudo[MAX_NAME_SIZE];
 
     pthread_t messaging_thread;
     pthread_t file_receiving_thread;
     pthread_t file_sending_thread;
-
 };
 
 int get_client_count(sem_t semaphore);
@@ -57,6 +56,8 @@ int accept_client(int server_socket);
 void list_Rooms (Room rooms [], char *list);
 
 void server_room_creation(int socket, Room rooms[]);
+
+void delete_room(int room_id, Client clients[], Room rooms[]);
 
 void modify_room(int socket, int choice, int index, Room rooms[]);
 
