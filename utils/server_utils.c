@@ -270,7 +270,7 @@ int accept_client(int server_socket) {
  * @param list the buffer in which the room list will be stored
  */
 void list_Rooms(Room rooms[], char *list) {
-    strcpy(list,"Liste des Rooms :\n");
+    strcpy(list,"Liste des salons :\n");
     for(int r = 0; r < NB_MAX_ROOM; r++) {
         if (rooms[r].created == 1){
             strcat(list, "- ");
@@ -286,16 +286,24 @@ void list_Rooms(Room rooms[], char *list) {
 
 
 /**
-* Makes a client join a given room.
-*/
+ * @brief Makes a given client join a given room.
+ * @param client_id the client's id
+ * @param room_id the room's id
+ * @param clients the clients array
+ * @param rooms the rooms array
+ */
 void join_room(int client_id, int room_id, Client clients[], Room rooms[]) {
     clients[client_id].rooms[room_id] = 1;
     rooms[room_id].membres[client_id] = 1;
 }
 
 /**
-* Makes a client leave a given room.
-*/
+ * @brief Makes a given client leave a given room.
+ * @param client_id the client's id
+ * @param room_id the room's id
+ * @param clients the clients array
+ * @param rooms the rooms array
+ */
 void leave_room(int client_id, int room_id, Client clients[], Room rooms[]) {
     clients[client_id].rooms[room_id] = 0;
     rooms[room_id].membres[client_id] = 0;
@@ -333,6 +341,13 @@ int get_room_id_from_message(char* msg) {
     }
 }
 
+/**
+ * @brief Tells if a given client is in a given room.
+ * @param client_id the client's id
+ * @param id_room the room's id
+ * @param clients the clients array
+ * @return 1 if the client is in the room; 0 otherwise
+ */
 int is_in_room(int client_id, int id_room, Client clients[]){
     if (clients[client_id].rooms[id_room] == 1){
         return 1;

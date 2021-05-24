@@ -124,19 +124,27 @@ void *messaging_thread_func(void *socket) {
                 case 0: // join
                     break;
                 case 1: // leave
+                    if (is_in_room(client_index, room_id, clients) == 1) {
+                        leave_room(client_index, room_id, clients, rooms);
+                        strcpy(send_buffer, "Vous avez quitté le salon.");
+                    } else {
+                        strcpy(send_buffer, "Impossible de quitter le salon, vous n'êtes pas dedans.");
+                    }
                     break;
                 case 2: // modify
                     break;
                 case 3: // delete
                     delete_room(room_id, clients, rooms);
                     strcpy(send_buffer, "Salon supprimé !");
-                    send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
                     break;
                 default: // bad command
                     strcpy(send_buffer, "Mauvaise commande...");
-                    send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
                     break;
             }
+
+            // sends the response to the client
+            send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
+
 
             /*
             switch (action_id) {
