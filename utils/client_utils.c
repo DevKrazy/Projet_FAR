@@ -3,9 +3,14 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <string.h>
 #include "headers/client_utils.h"
 #include "headers/utils.h"
 
+
+/* * * * * * * * * * *
+                        SOCKETS
+                                * * * * * * * * * * */
 
 /**
  * Configures the server's socket and updates the socket_return and addr_return values with the
@@ -24,14 +29,14 @@ int configure_connecting_socket(char* address, int port, int* socket_return, str
         perror("Erreur lors de la création de la socket serveur pour les messages.\n");
         return -1;
     }
-    printf("Socket serveur créée avec succès.\n");
+    //printf("Socket serveur créée avec succès.\n");
 
     // server address configuration
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET; // address type
     inet_pton(AF_INET, address, &(server_address.sin_addr)); //converts the address from the CLI to the correct format
     server_address.sin_port = htons(port); // address port (converted from the CLI)
-    printf("Adresse du serveur configurée avec succès ! (%s:%d)\n", address, port);
+    //printf("Adresse du serveur configurée avec succès ! (%s:%d)\n", address, port);
 
     *socket_return = server_socket;
     *addr_return = server_address;
@@ -54,12 +59,171 @@ int connect_on(int socket, struct sockaddr_in address) {
         return -1;
     }
 
-    printf("En attente de l'acceptation du serveur...\n");
+    //printf("En attente de l'acceptation du serveur...\n");
 
     char welcome_message[MAX_MSG_SIZE];
     recv(socket, welcome_message, MAX_MSG_SIZE, 0);
-    printf("Message de bienvenue du serveur : %s\n", welcome_message);
+    //printf("Message de bienvenue du serveur : %s\n", welcome_message);
 
     return 0;
 }
 
+
+
+/* * * * * * * * * * *
+                        ROOMS
+                              * * * * * * * * * * */
+
+/**
+ * @brief Manages the creation of a room on the client's side. This
+ * function asks for the necessary information in order to create a room and
+ * sends everything to the server.
+ * @param socket the socket on which the information will be sent
+ */
+void client_room_creation(int socket) {
+    print_title("Création du salon");
+    printf("Entrez le nom du salon : (20 caractères max)\n");
+    char name[20];
+    fgets(name, 20, stdin);
+    name[strcspn(name, "\n")] = 0;
+    send(socket, name, 20, 0);
+
+    printf("Entrez le nombre de membres max :\n");
+    char nb_max_members[sizeof(int)];
+    fgets(nb_max_members, sizeof(int), stdin);
+
+    int max_members = atoi(nb_max_members);
+    send(socket, &max_members, sizeof(int), 0);
+
+    // receives the response from the server
+    char response[MAX_MSG_SIZE];
+    recv(socket, response, MAX_MSG_SIZE, 0);
+    printf("%s\n", response);
+    print_separator(strlen("Création du salon"));
+}
+
+/**
+ * @brief Prints the modifications that can be applied to a room.
+ */
+void print_room_modification_actions() {
+    printf("Que voulez-vous modifier sur ce salon ?\n");
+    printf(" - Le nom :                             1\n");
+    printf(" - Le nb. max. de membres :             2\n");
+    printf(" - Le nom et le nb. max. de membres :   3\n");
+}
+
+/**
+ * @brief Prints the actions that can be executed on a room.
+ */
+void print_room_actions() {
+    printf("Que voulez-vous faire avec ce salon ?\n");
+    printf(" - Rejoindre le salon :     /join\n");
+    printf(" - Quitter le salon :       /leave\n");
+    printf(" - Modifier le salon :      /modify\n");
+    printf(" - Supprimer le salon :     /delete\n");
+}
+
+/**
+ * @brief Manages the modification of a room on the client's side. This
+ * function asks for the necessary information in order to modify a room and
+ * sends everything to the server.
+ * @param socket the socket on which the information will be sent
+ */
+void client_room_modification(int socket, int choice) {
+    print_title("Modification du salon");
+    switch(choice) {
+        case 1: {
+            printf("Entrez le nom du salon : (20 caractères max)\n");
+            char name[20];
+            fgets(name, 20, stdin);
+            name[strcspn(name, "\n")] = 0;
+            send(socket, name, 20, 0);
+            break;
+        }
+        case 2: {
+            printf("Entrez le nombre de membres max :\n");
+            char nb_max_members[sizeof(int)];
+            fgets(nb_max_members, sizeof(int), stdin);
+
+            int max_members = atoi(nb_max_members);
+            send(socket, &max_members, sizeof(int), 0);
+            break;
+        }
+        default:
+            printf("Veuillez entrer un nombre entre 1 et 2. Abandon de la modification.\n");
+            break;
+    }
+    // receives the response from the server
+    char response[MAX_MSG_SIZE];
+    recv(socket, response, MAX_MSG_SIZE, 0);
+    printf("%s\n", response);
+    print_separator(strlen("Modification du salon"));
+}
+
+/**
+ * @brief Gets the id of a room command.
+ * @param command the executed room command
+ * @return the id of the command
+ */
+int get_action_id(char* command) {
+    if (strcmp(command, "/join\n") == 0) {
+        return 0;
+    }
+    else if (strcmp(command, "/leave\n") == 0) {
+        return 1;
+    }
+    else if (strcmp(command, "/modify\n") == 0) {
+        return 2;
+    }
+    else if (strcmp(command, "/delete\n") == 0) {
+        return 3;
+    }
+    else{
+        return 0;
+    }
+}
+
+/**
+ * @brief displays the help of the various commands by reading the man.txt file.
+ */
+void print_man() {
+    FILE* file;
+    char * line = NULL;
+    size_t len = 0;
+
+    file = fopen("./man.txt", "r");
+
+    print_title("Aide");
+    while (getline(&line, &len, file) != -1) {
+        printf("%s", line);
+    }
+    print_separator(strlen("Aide"));
+
+    fclose(file);
+}
+
+/**
+ * @brief prints a title inside a separator
+ * @param title the title to print
+ */
+void print_title(char* title) {
+    char separator[MAX_MSG_SIZE];
+    strcpy(separator, "\n=================<");
+    strcat(separator, title);
+    strcat(separator, ">=================\n");
+    printf("%s\n", separator);
+}
+
+/**
+ * @brief prints a separator with a given size in the middle
+ * @param middle_size the number of "=" that will be written inside the 2 "<>"
+ */
+void print_separator(int middle_size) {
+    char separator[MAX_MSG_SIZE];
+    strcpy(separator, "\n=================<");
+    for (int i = 0; i < middle_size; i++) {
+        strcat(separator, "=");
+    }
+    strcat(separator, ">=================");
+    printf("%s\n", separator);
+}

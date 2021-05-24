@@ -13,10 +13,7 @@
 
 // TODO : vérifier qu'un client est dans une room avant d'envoyer le emssage
 // TODO : ne pas envoyer le emssage de room au client lui-même
-// TODO : leave une room
 // TODO : voir les rooms dans lesquelles on est
-// TODO : create room
-//todo : premier client peut pas rejoindre room
 
 // Threads
 pthread_t message_sending_thread;
@@ -32,6 +29,10 @@ struct sockaddr_in server_file_sending_address;
 int recv_file_socket;
 struct sockaddr_in recv_file_address;
 
+//to join room
+int server_room_socket;
+struct sockaddr_in server_room_address;
+
 char argv1[15];
 int argv2;
 
@@ -40,6 +41,7 @@ char file_content[MAX_FILE_SIZE];
 char fileName[MAX_MSG_SIZE];
 int file_size;
 
+// TODO bouger ces fonctions dans un header
 void* file_sending_thread_func(void *socket);
 void* file_receiving_thread_func(void *socket);
 
@@ -74,7 +76,6 @@ void get_file_to_send(int* size_file) {
     close(fp);
 }
 
-
 void* message_sending_thread_func(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
     int server_socket = (int) (long) socket;
@@ -94,26 +95,71 @@ void* message_sending_thread_func(void *socket) {
         if (strcmp(send_buffer, "/file\n") == 0) {
             // the client wants to send a file
             get_file_to_send(&file_size);
-            send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
+            send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
             configure_connecting_socket(argv1, argv2 + 1, &server_file_sending_socket, &server_file_sending_address);
             connect_on(server_file_sending_socket, server_file_sending_address);
             pthread_create(&file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_file_sending_socket);
 
+        } else if (strcmp(send_buffer, "/man\n") == 0) {
+            print_man();
+        } else if (strcmp(send_buffer, "/room\n") == 0) {
 
-        } else if (strcmp(send_buffer, "/room\n") == 0) {          
-          
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
+            configure_connecting_socket(argv1, argv2 + 1, &server_room_socket, &server_room_address);
+            connect_on(server_room_socket, server_room_address);
 
-            char listRooms[MAX_MSG_SIZE];
-            recv(server_socket, listRooms, MAX_MSG_SIZE, 0); // receives the room list
-            printf("%s", listRooms);
+            recv(server_room_socket, send_buffer, MAX_MSG_SIZE, 0); // receives either the room list
+            if (strcmp(send_buffer, "0") == 0) {
+                printf("Il n'y a aucun salon, utilisez /room create pour en créer.\n");
+            } else {
+                print_title("Salons");
+                printf("%s\n", send_buffer);
 
-            // Asks the user for the room port
-            printf("Entrez le numero du salon à rejoindre : \n");
-            fgets(send_buffer, 5, stdin);
-            int room_id = atoi(send_buffer);
-            send(server_socket, &room_id, sizeof(int), 0); // sends the room id
-            
+                // Asks the user for the room id
+                printf("Avec quel salon souhaitez-vous interagir ? \n");
+                fgets(send_buffer, MAX_MSG_SIZE, stdin);
+                int room_id = atoi(send_buffer);
+                send(server_room_socket, &room_id, sizeof(int), 0); // sends the room id
+
+                // Asks the user what he wants to do with the selected room
+                print_room_actions();
+                printf("Que souhaitez-vous faire ?\n");
+                fgets(send_buffer, MAX_MSG_SIZE, stdin);
+                int action_id = get_action_id(send_buffer);
+                send(server_room_socket, &action_id, sizeof(int), 0); // sends the action id
+
+                switch (action_id) {
+                    case 2: { // modify room
+
+                        // Asks the user what he wants to modify
+                        print_room_modification_actions();
+                        fgets(send_buffer, sizeof(int), stdin);
+                        int modif_action_id = atoi(send_buffer);
+                        send(server_room_socket, &modif_action_id, sizeof(int), 0); // sends the modification action id
+
+                        client_room_modification(server_room_socket, modif_action_id);
+                        break;
+                    }
+                    default: { // all other cases (just need the server's response)
+                        recv(server_room_socket, send_buffer, MAX_MSG_SIZE, 0); // receives the server's response
+                        printf("%s\n", send_buffer);
+                        break;
+                    }
+                }
+                print_separator(strlen("Salons"));
+            }
+
+            sleep(1);
+            shutdown(server_room_socket,2);
+
+        } else if (strcmp(send_buffer, "/room create\n") == 0) {
+
+            send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
+            configure_connecting_socket(argv1, argv2 + 1, &server_room_socket, &server_room_address);
+            connect_on(server_room_socket, server_room_address);
+
+            client_room_creation(server_room_socket);
+
         } else if (strcmp(send_buffer, "/filesrv\n") == 0) {
 
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
@@ -127,10 +173,11 @@ void* message_sending_thread_func(void *socket) {
         } else {
             // the client wants to send a message
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0);
-            //printf("[Vous] : %s", send_buffer);
         }
+        // TODO: free send_buffer ? (vérifier que ça casse rien)
     }
 }
+
 void* file_sending_thread_func(void *socket) {
     int server_socket = (int) (long) socket;
     send(server_socket, fileName, MAX_MSG_SIZE, 0); // sends file name
@@ -140,9 +187,7 @@ void* file_sending_thread_func(void *socket) {
     bzero(file_content, file_size);
     shutdown(server_socket,2);
     pthread_exit(0);
-
 }
-
 
 void* file_receiving_thread_func(void *socket) {
     int server_socket = (int) (long) socket;

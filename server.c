@@ -63,13 +63,12 @@ void* file_receiving_thread_func(void* socket) {
  * @param socket the server's socket
  * @return
  */
-
 void *messaging_thread_func(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
     int client_socket = (int) (long) socket;
     int client_index = get_index_by_socket(clients, client_socket);
     for (int z=0; z<NB_MAX_ROOM; z++){
-      clients[client_index].room_id[z]=0;
+        clients[client_index].rooms[z]=0;
     }
 
     // receives and adds the client's name to its structure
@@ -84,16 +83,16 @@ void *messaging_thread_func(void *socket) {
         if (recv_res == 0 || strcmp(send_buffer, "/fin\n") == 0) {
             clients[client_index].client_msg_socket = 0; // client_msg_socket reset
             sem_post(&semaphore);
-            
+
             shutdown(client_socket, 2);
             pthread_exit(0);
         }
-        if (strcmp(send_buffer, "/file\n")==0){
+        if (strcmp(send_buffer, "/file\n")==0) {
 
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
             pthread_create(&clients[client_index].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) clients[client_index].client_file_receiving_socket);
 
-        }else if (strcmp(send_buffer, "/filesrv\n") == 0) {
+        } else if (strcmp(send_buffer, "/filesrv\n") == 0) {
             printf("IN FILESRV\n");
             char* file_list = malloc(1); // malloc(1) because list_files reallocate the memory
             list_files(SERVER_DIR, &file_list);
@@ -104,29 +103,88 @@ void *messaging_thread_func(void *socket) {
             clients[client_index].client_file_send_socket = accept_client(server_send_file_socket);
             pthread_create(&clients[client_index].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) clients[client_index].client_file_send_socket);
 
-        }else if (strcmp(send_buffer, "/room\n") == 0) {
+        } else if (strcmp(send_buffer, "/room\n") == 0) {
 
-            // sends the room list to the client
-            char* listRooms = malloc(MAX_MSG_SIZE);
-            list_Rooms(rooms, &listRooms);
-            send(client_socket, listRooms, MAX_MSG_SIZE, 0); // sends the room list
+            clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
 
-            int room_id;
-            recv(client_socket, &room_id, sizeof(int), 0); // receives the room id
+            if (get_room_count(rooms) == 0) {
+                strcpy(send_buffer, "0");
+            } else {
 
-            // accepts the client
-            if (is_room_complete(room_id, rooms) == 0){ //si la room n'est pas complete
-              join_room(client_index, room_id, clients, rooms);
+                // sends the room list
+                list_Rooms(rooms, send_buffer);
+                send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
+
+                // receives the room id
+                printf("--Reception rooms--\n");
+                int room_id;
+                recv(clients[client_index].client_file_receiving_socket, &room_id, sizeof(int), 0);
+
+                // receives the action id
+                int action_id;
+                recv(clients[client_index].client_file_receiving_socket, &action_id, sizeof(int), 0);
+
+                switch (action_id) {
+                    case 0: { // join
+                        if (is_in_room(client_index, room_id, clients) == 0) {
+                            join_room(client_index, room_id, clients, rooms);
+                            strcpy(send_buffer, "Vous avez rejoint le salon.");
+                        } else {
+                            strcpy(send_buffer, "Impossible de rejoindre le salon, vous êtes déjà dedans.");
+                        }
+                        break;
+                    }
+                    case 1: { // leave
+                        if (is_in_room(client_index, room_id, clients) == 1) {
+                            leave_room(client_index, room_id, clients, rooms);
+                            strcpy(send_buffer, "Vous avez quitté le salon.");
+                        } else {
+                            strcpy(send_buffer, "Impossible de quitter le salon, vous n'êtes pas dedans.");
+                        }
+                        break;
+                    }
+                    case 2: { // modify
+
+                        // Receives the modification action id
+                        int modif_action_id;
+                        recv(clients[client_index].client_file_receiving_socket, &modif_action_id, sizeof(int), 0);
+                        printf("Modif action :%d\n", modif_action_id);
+
+                        server_room_modification(clients[client_index].client_file_receiving_socket, modif_action_id,
+                                                 room_id, rooms);
+                        break;
+                    }
+                    case 3: { // delete
+                        delete_room(room_id, clients, rooms);
+                        strcpy(send_buffer, "Salon supprimé !");
+                        break;
+                    }
+                    default: // bad command
+                        strcpy(send_buffer, "Mauvaise commande...");
+                        break;
+                }
             }
-        } else { // the client wants to send a message
-            int room_id = get_room_id_from_message(send_buffer);
-            if (room_id != -1 && is_in_room(client_index,room_id, clients)==1) { // sends the message in a room
-              broadcast_message_in_room(send_buffer, clients, rooms, room_id, client_index);
 
+            // sends the response to the client
+            send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
+
+        } else if (strcmp(send_buffer, "/room create\n") == 0) {
+
+            clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
+            server_room_creation(clients[client_index].client_file_receiving_socket, rooms);
+
+        } else { // the client wants to send a message
+
+            int room_id = get_room_id_from_message(send_buffer);
+
+            if (room_id != -1) { // sends the message in a room
+                if (is_in_room(client_index,room_id, clients) == 1) {
+                    broadcast_message_in_room(send_buffer, clients, rooms, room_id, client_index);
+                }
             } else if (is_private_message(send_buffer, clients) == 1) { // sends the message to a user
-            
+
                 send_message_to(send_buffer, clients,client_socket);
-                
+
             } else { // sends the message in the general chat
                 broadcast_message(send_buffer, clients, client_index);
             }
@@ -188,7 +246,7 @@ int main(int argc, char *argv[]) {
     configure_listening_socket(atoi(argv[1]), &server_msg_socket, &server_msg_address);
     bind_and_listen_on(server_msg_socket, server_msg_address);
 
-    // configures the server receving file socket
+    // configures the server receiving file socket
     configure_listening_socket(atoi(argv[1]) + 1, &server_file_socket, &server_file_address);
     bind_and_listen_on(server_file_socket, server_file_address);
 
@@ -204,6 +262,7 @@ int main(int argc, char *argv[]) {
         strcat(nom, num);
         strcpy(rooms[w].room_name, nom);
         rooms[w].nb_max_membre = 3;
+        rooms[w].created=0;
     }
 
 
