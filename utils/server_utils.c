@@ -327,16 +327,21 @@ void server_room_creation(int socket, Room rooms[]) {
     recv(socket, &max_members, sizeof(int), 0);
     printf("Nb. max. de membres du salon : %d\n", max_members);
 
+    char response[MAX_MSG_SIZE];
+    // Finds an available empty slot to create the room
     for (int i = 0; i < NB_MAX_ROOM; i++) {
         if (rooms[i].created == 0) {
             rooms[i].created = 1;
             rooms[i].nb_max_membre = max_members;
             strcpy(rooms[i].room_name, room_name);
+            strcpy(response, "Salon créé !!!");
+            send(socket, response, MAX_MSG_SIZE, 0);
             // NE PAS METTRE DE PRINT ICI SINON ÇA BLOQUE
             return;
         }
     }
-    printf("Nombre maximum de rooms atteint.\n");
+    strcpy(response, "Nombre maximum de rooms atteint.");
+    send(socket, response, MAX_MSG_SIZE, 0);
 }
 
 

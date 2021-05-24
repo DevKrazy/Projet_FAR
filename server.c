@@ -161,8 +161,6 @@ void *messaging_thread_func(void *socket) {
         } else if (strcmp(send_buffer, "/room create\n") == 0) {
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
             server_room_creation(clients[client_index].client_file_receiving_socket, rooms);
-            printf("Salon créé avec succès !\n");
-
         }else { // the client wants to send a message
             int room_id = get_room_id_from_message(send_buffer);
             if (room_id != -1 && is_in_room(client_index,room_id, clients)==1) { // sends the message in a room

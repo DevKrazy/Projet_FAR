@@ -80,7 +80,12 @@ void client_room_creation(int socket) {
     int max_members = atoi(nb_max_members);
     send(socket, &max_members, sizeof(int), 0);
 
-    printf("Salon créé avec succès ! \n");
+    printf("Tentative de création de la room côté serveur... \n");
+
+    // receives the response from the server
+    char response[MAX_MSG_SIZE];
+    recv(socket, response, MAX_MSG_SIZE, 0);
+    printf("%s\n", response);
 }
 
 void Modification_choice() {
