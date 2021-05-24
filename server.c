@@ -122,6 +122,12 @@ void *messaging_thread_func(void *socket) {
 
             switch (action_id) {
                 case 0: // join
+                    if (is_in_room(client_index, room_id, clients) == 0) {
+                        join_room(client_index, room_id, clients, rooms);
+                        strcpy(send_buffer, "Vous avez rejoint le salon.");
+                    } else {
+                        strcpy(send_buffer, "Impossible de rejoindre le salon, vous êtes déjà dedans.");
+                    }
                     break;
                 case 1: // leave
                     if (is_in_room(client_index, room_id, clients) == 1) {
