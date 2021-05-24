@@ -15,3 +15,9 @@ void client_room_modification(int socket, int choice);
 void print_room_actions ();
 
 int get_action_id(char* command);
+
+void print_man();
+
+void print_title(char* title);
+
+void print_separator(int middle_size);

@@ -29,14 +29,14 @@ int configure_connecting_socket(char* address, int port, int* socket_return, str
         perror("Erreur lors de la création de la socket serveur pour les messages.\n");
         return -1;
     }
-    printf("Socket serveur créée avec succès.\n");
+    //printf("Socket serveur créée avec succès.\n");
 
     // server address configuration
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET; // address type
     inet_pton(AF_INET, address, &(server_address.sin_addr)); //converts the address from the CLI to the correct format
     server_address.sin_port = htons(port); // address port (converted from the CLI)
-    printf("Adresse du serveur configurée avec succès ! (%s:%d)\n", address, port);
+    //printf("Adresse du serveur configurée avec succès ! (%s:%d)\n", address, port);
 
     *socket_return = server_socket;
     *addr_return = server_address;
@@ -59,11 +59,11 @@ int connect_on(int socket, struct sockaddr_in address) {
         return -1;
     }
 
-    printf("En attente de l'acceptation du serveur...\n");
+    //printf("En attente de l'acceptation du serveur...\n");
 
     char welcome_message[MAX_MSG_SIZE];
     recv(socket, welcome_message, MAX_MSG_SIZE, 0);
-    printf("Message de bienvenue du serveur : %s\n", welcome_message);
+    //printf("Message de bienvenue du serveur : %s\n", welcome_message);
 
     return 0;
 }
@@ -81,8 +81,7 @@ int connect_on(int socket, struct sockaddr_in address) {
  * @param socket the socket on which the information will be sent
  */
 void client_room_creation(int socket) {
-    printf("## Création d'un salon\n");
-
+    print_title("Création du salon");
     printf("Entrez le nom du salon : (20 caractères max)\n");
     char name[20];
     fgets(name, 20, stdin);
@@ -100,8 +99,12 @@ void client_room_creation(int socket) {
     char response[MAX_MSG_SIZE];
     recv(socket, response, MAX_MSG_SIZE, 0);
     printf("%s\n", response);
+    print_separator(strlen("Création du salon"));
 }
 
+/**
+ * @brief Prints the modifications that can be applied to a room.
+ */
 void print_room_modification_actions() {
     printf("Que voulez-vous modifier sur ce salon ?\n");
     printf(" - Le nom :                             1\n");
@@ -109,6 +112,9 @@ void print_room_modification_actions() {
     printf(" - Le nom et le nb. max. de membres :   3\n");
 }
 
+/**
+ * @brief Prints the actions that can be executed on a room.
+ */
 void print_room_actions() {
     printf("Que voulez-vous faire avec ce salon ?\n");
     printf(" - Rejoindre le salon :     /join\n");
@@ -124,7 +130,7 @@ void print_room_actions() {
  * @param socket the socket on which the information will be sent
  */
 void client_room_modification(int socket, int choice) {
-    printf("## Modification d'un salon\n");
+    print_title("Modification du salon");
     switch(choice) {
         case 1: {
             printf("Entrez le nom du salon : (20 caractères max)\n");
@@ -151,8 +157,14 @@ void client_room_modification(int socket, int choice) {
     char response[MAX_MSG_SIZE];
     recv(socket, response, MAX_MSG_SIZE, 0);
     printf("%s\n", response);
+    print_separator(strlen("Modification du salon"));
 }
 
+/**
+ * @brief Gets the id of a room command.
+ * @param command the executed room command
+ * @return the id of the command
+ */
 int get_action_id(char* command) {
     if (strcmp(command, "/join\n") == 0) {
         return 0;
@@ -169,4 +181,49 @@ int get_action_id(char* command) {
     else{
         return 0;
     }
+}
+
+/**
+ * @brief displays the help of the various commands by reading the man.txt file.
+ */
+void print_man() {
+    FILE* file;
+    char * line = NULL;
+    size_t len = 0;
+
+    file = fopen("./man.txt", "r");
+
+    print_title("Aide");
+    while (getline(&line, &len, file) != -1) {
+        printf("%s", line);
+    }
+    print_separator(strlen("Aide"));
+
+    fclose(file);
+}
+
+/**
+ * @brief prints a title inside a separator
+ * @param title the title to print
+ */
+void print_title(char* title) {
+    char separator[MAX_MSG_SIZE];
+    strcpy(separator, "\n=================<");
+    strcat(separator, title);
+    strcat(separator, ">=================\n");
+    printf("%s\n", separator);
+}
+
+/**
+ * @brief prints a separator with a given size in the middle
+ * @param middle_size the number of "=" that will be written inside the 2 "<>"
+ */
+void print_separator(int middle_size) {
+    char separator[MAX_MSG_SIZE];
+    strcpy(separator, "\n=================<");
+    for (int i = 0; i < middle_size; i++) {
+        strcat(separator, "=");
+    }
+    strcat(separator, ">=================");
+    printf("%s\n", separator);
 }

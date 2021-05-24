@@ -100,6 +100,8 @@ void* message_sending_thread_func(void *socket) {
             connect_on(server_file_sending_socket, server_file_sending_address);
             pthread_create(&file_sending_thread, NULL, file_sending_thread_func, (void *) (long) server_file_sending_socket);
 
+        } else if (strcmp(send_buffer, "/man\n") == 0) {
+            print_man();
         } else if (strcmp(send_buffer, "/room\n") == 0) {
 
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
@@ -110,6 +112,7 @@ void* message_sending_thread_func(void *socket) {
             if (strcmp(send_buffer, "0") == 0) {
                 printf("Il n'y a aucun salon, utilisez /room create pour en créer.\n");
             } else {
+                print_title("Salons");
                 printf("%s\n", send_buffer);
 
                 // Asks the user for the room id
@@ -143,6 +146,7 @@ void* message_sending_thread_func(void *socket) {
                         break;
                     }
                 }
+                print_separator(strlen("Salons"));
             }
 
             sleep(1);

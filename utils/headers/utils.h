@@ -5,9 +5,8 @@
 #define MAX_MSG_SIZE 10000
 #define MAX_FILE_SIZE 10000
 #define MAX_NAME_SIZE 12
-#define END_WORD "fin\n"
 #define SERVER_DIR "./server_files/"
-#define CLIENT_DIR "./client_files/" 
+#define CLIENT_DIR "./client_files/"
 #define NB_MAX_ROOM 3
 
 void check_error(int check, char *err_msg);
