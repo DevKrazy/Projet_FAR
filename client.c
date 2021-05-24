@@ -132,7 +132,7 @@ void* message_sending_thread_func(void *socket) {
                     print_room_modification_actions();
                     fgets(send_buffer, sizeof(int), stdin);
                     int modif_action_id = atoi(send_buffer);
-                    send(server_room_socket, &action_id, sizeof(int), 0); // sends the modification action id
+                    send(server_room_socket, &modif_action_id, sizeof(int), 0); // sends the modification action id
 
                     client_room_modification(server_room_socket, modif_action_id);
                     break;

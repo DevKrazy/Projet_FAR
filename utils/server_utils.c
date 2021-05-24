@@ -411,8 +411,8 @@ void delete_room(int room_id, Client clients[], Room rooms[]) {
  * sends everything to the server.
  * @param socket the socket from which the information will be received
  */
-void server_room_modification(int socket, int choice, int index, Room *rooms) {
-    printf("## Modification du salon n° %d.\n", index);
+void server_room_modification(int socket, int choice, int room_id, Room *rooms) {
+    printf("## Modification du salon n° %d.\n", room_id);
     char response[MAX_MSG_SIZE];
 
     switch(choice){
@@ -420,13 +420,17 @@ void server_room_modification(int socket, int choice, int index, Room *rooms) {
             char room_name[20];
             recv(socket, room_name, 20, 0);
             printf("Nom du salon : %s\n", room_name);
+            strcpy(rooms[room_id].room_name, room_name);
+
             strcpy(response, "Nom du salon modifié.");
             break;
         }
         case 2: { // modifies the room's max members number
             int members;
             recv(socket, &members, sizeof(int), 0);
-            rooms[index].nb_max_membre = members;
+            printf("Nb. max. de membres du salon : %d\n", members);
+            rooms[room_id].nb_max_membre = members;
+
             strcpy(response, "Nb. max. de membres du salon modifié.");
             break;
         }
@@ -434,4 +438,5 @@ void server_room_modification(int socket, int choice, int index, Room *rooms) {
             strcpy(response, "Aucune modification effectuée (mauvaise commande).\n");
             break;
     }
+    send(socket, response, MAX_MSG_SIZE, 0);
 }

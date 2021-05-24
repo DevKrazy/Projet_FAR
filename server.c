@@ -144,6 +144,7 @@ void *messaging_thread_func(void *socket) {
                     // Receives the modification action id
                     int modif_action_id;
                     recv(clients[client_index].client_file_receiving_socket, &modif_action_id, sizeof(int), 0);
+                    printf("Modif action :%d\n", modif_action_id);
 
                     server_room_modification(clients[client_index].client_file_receiving_socket, modif_action_id, room_id, rooms);
                     break;

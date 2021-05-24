@@ -147,7 +147,6 @@ void client_room_modification(int socket, int choice) {
             printf("Veuillez entrer un nombre entre 1 et 2. Abandon de la modification.\n");
             break;
     }
-
     // receives the response from the server
     char response[MAX_MSG_SIZE];
     recv(socket, response, MAX_MSG_SIZE, 0);
