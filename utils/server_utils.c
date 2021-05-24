@@ -5,7 +5,7 @@
 #include <string.h>
 #include <semaphore.h>
 #include <dirent.h>
-#include <regex.h> 
+#include <regex.h>
 #include "headers/server_utils.h"
 
 
@@ -88,14 +88,14 @@ void send_message_to(char *msg, Client clients[], int from_client_socket) {
         strcat(affichage,"] : ");
         strcat(affichage, msg + strlen(name) + 1); // moves the pointer after the name
         printf("affichage : %s\n", affichage );
-        send(num_socket, affichage, MAX_MSG_SIZE, 0); 
+        send(num_socket, affichage, MAX_MSG_SIZE, 0);
     }
     bzero(affichage,MAX_MSG_SIZE+15);
 }
 
 /**
  * Sends a private message to another client based on it's id.
- * @param msg the message to send 
+ * @param msg the message to send
  * @param clients the clients array
  * @param to_client the receiver of the message
  * @param from_client the sender of the message
@@ -111,7 +111,7 @@ void send_message_to_client(char *msg, Client clients[], int to_client, int from
         strcat(affichage,"] : ");
         strcat(affichage, msg);
         printf("affichage : %s\n", affichage );
-        send(num_socket, affichage, MAX_MSG_SIZE, 0); 
+        send(num_socket, affichage, MAX_MSG_SIZE, 0);
     }
     bzero(affichage,MAX_MSG_SIZE+15);
 }
@@ -171,9 +171,9 @@ void broadcast_message(char *msg, Client clients[], int from_client_index) {
 void broadcast_message_in_room(char* msg, Client clients[], Room rooms[], int to_room, int from_client_index) {
     Room client_room = rooms[to_room];
     for (int i = 0; i < sizeof(client_room.membres); i++) {
-      if (client_room.membres[i] == 1 && i!=from_client_index) { // the client is in the room
-        send_message_to_client(msg, clients, i, from_client_index);
-      }
+        if (client_room.membres[i] == 1 && i!=from_client_index && is_in_room(from_client_index, to_room, clients)==1) { // the client is in the room
+            send_message_to_client(msg, clients, i, from_client_index);
+        }
     }
 }
 
@@ -244,89 +244,140 @@ int accept_client(int server_socket) {
     return client_socket;
 }
 
-void list_Rooms (Room rooms[], char **list){
-  strcat(*list,"Liste des Rooms :\n");
-  for(int r = 0; r < NB_MAX_ROOM; r++) {
-    strcat(*list, "- ");
-    char room_id[5];
-    sprintf(room_id, "[%d] ", r);
-    strcat(*list, room_id);
-    strcat(*list, "Nom: ");
-    strcat(*list, rooms[r].room_name);
-    strcat(*list, "\n");
-  }
+void list_Rooms (Room rooms[], char *list){
+    strcat(list,"Liste des Rooms :\n");
+    for(int r = 0; r < NB_MAX_ROOM; r++) {
+        if (rooms[r].created==1){
+            strcat(list, "- ");
+            char room_id[5];
+            sprintf(room_id, "[%d] ", r);
+            strcat(list, room_id);
+            strcat(list, "Nom: ");
+            strcat(list, rooms[r].room_name);
+            strcat(list, "\n");
+        }
+    }
 }
 
 
-/*void create_room(int max_members, char room_name[20], int index, Room rooms[]) {
-   
-    rooms[index].nb_max_membre = max_members;
 
-
-    // name configuration
-    char nom[20];
-    if (index == 0) {
-        strcpy(nom, "Général");
-    } else {
-        strcpy(nom, "Salon N°");
-    }
-    char num[MAX_MSG_SIZE];
-    sprintf(num, "%d", index); // writes the "w" value inside the num
-    strcat(nom, num);
-    strcpy(rooms[index].room_name, nom);
-}*/
 
 /**
 * Makes a client join a given room.
 */
 void join_room(int client_id, int room_id, Client clients[], Room rooms[]) {
-  clients[client_id].room_id[room_id] = 1;
-  rooms[room_id].membres[client_id] = 1;
+    clients[client_id].room_id[room_id] = 1;
+    rooms[room_id].membres[client_id] = 1;
 }
 
 /**
 * Makes a client leave a given room.
 */
 void leave_room(int client_id, int room_id, Client clients[], Room rooms[]) {
-  clients[client_id].room_id[room_id] = 0;
-  rooms[room_id].membres[client_id] = 0;
+    clients[client_id].room_id[room_id] = 0;
+    rooms[room_id].membres[client_id] = 0;
 }
 
 /**
 * Returns true if a room is full; false otherwise.
 */
-int is_room_complete(int room_id, Room rooms[]){
-  int compteur=0; //nb de clients connectés
-  for (int a = 0; a<MAX_CLIENTS; a++){
-    if (rooms[room_id].membres[a]==1){
-      compteur+=1;
+int is_room_complete(int room_id, Room rooms[]) {
+    int compteur=0; //nb de clients connectés
+    for (int a = 0; a<MAX_CLIENTS; a++) {
+        if (rooms[room_id].membres[a]==1) {
+            compteur+=1;
+        }
     }
-  }
-  if (compteur==MAX_CLIENTS){
-    return 1;
-  }
-  return 0;
+    if (compteur==rooms[room_id].nb_max_membre) {
+        return 1;
+    }
+    return 0;
 }
 
 /**
 * If the message is a message that needs to be sent to a room, returns the room id; -1 otherwise.
 */
 int get_room_id_from_message(char* msg) {
-  regex_t regex;
-  int reg_result;
-  reg_result = regcomp(&regex, "^/[0-2]", 0); // compiles the regex
-  reg_result = regexec(&regex, msg, 0, NULL, 0); // checks if the msg matches the regex
-  if (reg_result == 0) {
-    int room_id = atoi(&msg[1]);
-    return room_id;
-  } else {
-    return -1;
-  }
+    regex_t regex;
+    int reg_result;
+    reg_result = regcomp(&regex, "^/[0-2]", 0); // compiles the regex
+    reg_result = regexec(&regex, msg, 0, NULL, 0); // checks if the msg matches the regex
+    if (reg_result == 0) {
+        int room_id = atoi(&msg[1]);
+        return room_id;
+    } else {
+        return -1;
+    }
 }
 
 int is_in_room(int client_id, int id_room, Client clients[]){
-  if (clients[client_id].room_id[id_room]==1){
-    return 1;
-  }
-  return 0;
+    if (clients[client_id].room_id[id_room]==1){
+        return 1;
+    }
+    return 0;
 }
+
+void server_room_creation(int socket, Room rooms[]) {
+    printf("## Création d'un salon\n");
+    char room_name[20];
+    recv(socket, room_name, 20, 0);
+    printf("Nom du salon : %s\n", room_name);
+
+    int max_members;
+    recv(socket, &max_members, sizeof(int), 0);
+    printf("Nb. max. de membres du salon : %d\n", max_members);
+
+    for (int i = 0; i < NB_MAX_ROOM; i++) {
+        if (rooms[i].created == 0) {
+            rooms[i].created = 1;
+            rooms[i].nb_max_membre = max_members;
+            strcpy(rooms[i].room_name, room_name);
+            // NE PAS METTRE DE PRINT ICI SINON ÇA BLOQUE
+            return;
+        }
+    }
+    printf("Nombre maximum de rooms atteint.\n");
+}
+
+
+void modify_room(int socket, int choice, int index, Room rooms[]) {
+    printf("## Modification du salon n° %d.\n", index);
+    switch(choice){
+        case 1: {
+            char name[20];
+            recv(socket, name, MAX_MSG_SIZE, 0);
+            strcpy(rooms[index].room_name, name);
+            printf("Nouveau nom : %s\n", name);
+            break;
+        }
+        case 2: {
+            printf("-- Modification du nombre max de membres --\n");
+            int members;
+            recv(socket, &members, sizeof(int), 0);
+            rooms[index].nb_max_membre = members;
+            printf("Nouveau nb. max. de membres : %s\n", members);
+            break;
+        }
+            /*
+            case 3:
+                printf("-- Modification du nom --\n");
+                char nom[20];
+                recv(socket, nom, MAX_MSG_SIZE, 0);
+                strcpy(rooms[index].room_name, nom);
+
+                printf("-- Modification du nombre max de membres --\n");
+                int max_members;
+                recv(socket,&max_members,sizeof(int), 0);
+                rooms[index].nb_max_membre = max_members;
+                break;
+                */
+        default:
+            printf("Aucune Modification effectuée (mauvaise commande).\n");
+            break;
+    }
+}
+
+/*void delete_room(int room_id, Client clients[], Room rooms[], int rooms_tab[NB_MAX_ROOM]){
+    rooms[index].created =0;
+
+}*/

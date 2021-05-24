@@ -63,13 +63,12 @@ void* file_receiving_thread_func(void* socket) {
  * @param socket the server's socket
  * @return
  */
-
 void *messaging_thread_func(void *socket) {
     char send_buffer[MAX_MSG_SIZE];
     int client_socket = (int) (long) socket;
     int client_index = get_index_by_socket(clients, client_socket);
     for (int z=0; z<NB_MAX_ROOM; z++){
-      clients[client_index].room_id[z]=0;
+        clients[client_index].room_id[z]=0;
     }
 
     // receives and adds the client's name to its structure
@@ -84,16 +83,16 @@ void *messaging_thread_func(void *socket) {
         if (recv_res == 0 || strcmp(send_buffer, "/fin\n") == 0) {
             clients[client_index].client_msg_socket = 0; // client_msg_socket reset
             sem_post(&semaphore);
-            
+
             shutdown(client_socket, 2);
             pthread_exit(0);
         }
-        if (strcmp(send_buffer, "/file\n")==0){
+        if (strcmp(send_buffer, "/file\n")==0) {
 
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
             pthread_create(&clients[client_index].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) clients[client_index].client_file_receiving_socket);
 
-        }else if (strcmp(send_buffer, "/filesrv\n") == 0) {
+        } else if (strcmp(send_buffer, "/filesrv\n") == 0) {
             printf("IN FILESRV\n");
             char* file_list = malloc(1); // malloc(1) because list_files reallocate the memory
             list_files(SERVER_DIR, &file_list);
@@ -104,28 +103,75 @@ void *messaging_thread_func(void *socket) {
             clients[client_index].client_file_send_socket = accept_client(server_send_file_socket);
             pthread_create(&clients[client_index].file_sending_thread, NULL, file_sending_thread_func, (void *) (long) clients[client_index].client_file_send_socket);
 
-        }else if (strcmp(send_buffer, "/room\n") == 0) {
+        } else if (strcmp(send_buffer, "/room\n") == 0) {
 
-            // sends the room list to the client
-            char* listRooms = malloc(MAX_MSG_SIZE);
-            list_Rooms(rooms, &listRooms);
-            send(client_socket, listRooms, MAX_MSG_SIZE, 0); // sends the room list
+            printf("on est dans server room\n");
+            //recuperation et envoi de la liste des rooms
 
+            clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
+            printf("apres connexion client server\n");
+            char listRooms[MAX_MSG_SIZE];
+            list_Rooms(rooms,listRooms);
+            send(clients[client_index].client_file_receiving_socket,listRooms,MAX_MSG_SIZE, 0);
+
+            printf("--Reception room_id--\n");
             int room_id;
-            recv(client_socket, &room_id, sizeof(int), 0); // receives the room id
+            recv(clients[client_index].client_file_receiving_socket, &room_id, sizeof(int), 0);
 
-            if (is_room_complete(room_id, rooms) == 0){ //si la room n'est pas complete
-              join_room(client_index, room_id, clients, rooms);
+            int rcv_command;
+            recv(clients[client_index].client_file_receiving_socket, &rcv_command, sizeof(int), 0);
+
+            switch (rcv_command) {
+                case 0:
+                    printf("--Quitter un salon--\n");
+                    leave_room(client_index,room_id, clients,rooms);
+                    break;
+                case 1:
+                    printf("--Creation du Salon--\n");
+                    break;
+                case 2:
+                    printf("--Modification du Salon--\n");
+
+                    int choice;
+                    recv(clients[client_index].client_file_receiving_socket,&choice,sizeof(int), 0);
+
+                    modify_room(clients[client_index].client_file_receiving_socket,choice,room_id,rooms);
+
+                    break;
+                case 3:
+                    printf("--Rejoindre un Salon--\n");
+                    // accepts the client
+                    if (is_room_complete(room_id, rooms) == 0){ //si la room n'est pas complete
+                        join_room(client_index, room_id, clients, rooms);
+                    }
+                    break;
+                case 4:
+                    printf("--Supprimer un Salon--\n");
+                    send(clients[client_index].client_file_receiving_socket, listRooms, MAX_MSG_SIZE, 0); // sends the room list
+
+                    int id_room;
+                    recv(clients[client_index].client_file_receiving_socket, &id_room, sizeof(int), 0); // receives the room id
+
+                    //delete_room(room_id,clients,rooms,tab_rooms);
+                    break;
+                default:
+                    printf("--Pas le bon numéro --\n");
+                    break;
             }
-        } else { // the client wants to send a message
+        } else if (strcmp(send_buffer, "/room create\n") == 0) {
+            clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
+            server_room_creation(clients[client_index].client_file_receiving_socket, rooms);
+            printf("Salon créé avec succès !\n");
+
+        }else { // the client wants to send a message
             int room_id = get_room_id_from_message(send_buffer);
             if (room_id != -1 && is_in_room(client_index,room_id, clients)==1) { // sends the message in a room
-              broadcast_message_in_room(send_buffer, clients, rooms, room_id, client_index);
+                broadcast_message_in_room(send_buffer, clients, rooms, room_id, client_index);
 
             } else if (is_private_message(send_buffer, clients) == 1) { // sends the message to a user
-            
+
                 send_message_to(send_buffer, clients,client_socket);
-                
+
             } else { // sends the message in the general chat
                 broadcast_message(send_buffer, clients, client_index);
             }
@@ -187,7 +233,7 @@ int main(int argc, char *argv[]) {
     configure_listening_socket(atoi(argv[1]), &server_msg_socket, &server_msg_address);
     bind_and_listen_on(server_msg_socket, server_msg_address);
 
-    // configures the server receving file socket
+    // configures the server receiving file socket
     configure_listening_socket(atoi(argv[1]) + 1, &server_file_socket, &server_file_address);
     bind_and_listen_on(server_file_socket, server_file_address);
 
@@ -203,6 +249,7 @@ int main(int argc, char *argv[]) {
         strcat(nom, num);
         strcpy(rooms[w].room_name, nom);
         rooms[w].nb_max_membre = 3;
+        rooms[w].created=0;
     }
 
 

@@ -24,5 +24,5 @@ int get_last_tty();
 
 FILE* new_tty();
 
-int getCommandId(char* command);
+//int getCommandId(char* command);
 

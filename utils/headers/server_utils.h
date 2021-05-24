@@ -13,6 +13,7 @@ struct Room {
   int nb_max_membre;
   int membres[MAX_CLIENTS];
   char room_name[20];
+  int created;
 };
 
 typedef struct Client Client;
@@ -53,9 +54,11 @@ int bind_and_listen_on(int socket, struct sockaddr_in address);
 
 int accept_client(int server_socket);
 
-void list_Rooms (Room rooms [], char **list);
+void list_Rooms (Room rooms [], char *list);
 
-void create_room(int max_members, char room_name[20], int port, int index, Room rooms[]);
+void server_room_creation(int socket, Room rooms[]);
+
+void modify_room(int socket, int choice, int index, Room rooms[]);
 
 void join_room(int client_id, int room_id, Client clients[], Room rooms[]);
 
