@@ -45,7 +45,7 @@ int is_private_message(char *msg, Client clients[]);
 
 void broadcast_message (char *msg, Client clients[], int from_client_index);
 
-void broadcast_message_in_room(char* msg, Client clients[], Room rooms[], int to_room, int from_client_index);
+void broadcast_message_in_room(char* msg, Client clients[], Room rooms[], int room_id, int client_id);
 
 int configure_listening_socket(int port, int* socket_return, struct sockaddr_in *addr_return);
 
@@ -70,3 +70,5 @@ int is_room_complete(int room_id, Room rooms[]);
 int get_room_id_from_message(char* msg);
 
 int is_in_room(int client_id, int id_room, Client clients[]);
+
+int get_room_count(Room rooms[]);

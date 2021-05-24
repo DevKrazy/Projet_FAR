@@ -13,10 +13,7 @@
 
 // TODO : vérifier qu'un client est dans une room avant d'envoyer le emssage
 // TODO : ne pas envoyer le emssage de room au client lui-même
-// TODO : leave une room
 // TODO : voir les rooms dans lesquelles on est
-// TODO : create room
-//todo : premier client peut pas rejoindre room
 
 // Threads
 pthread_t message_sending_thread;
@@ -109,38 +106,42 @@ void* message_sending_thread_func(void *socket) {
             configure_connecting_socket(argv1, argv2 + 1, &server_room_socket, &server_room_address);
             connect_on(server_room_socket, server_room_address);
 
-            recv(server_room_socket,send_buffer, MAX_MSG_SIZE, 0); // receives the room list
-            printf("%s\n", send_buffer);
+            recv(server_room_socket, send_buffer, MAX_MSG_SIZE, 0); // receives either the room list
+            if (strcmp(send_buffer, "0") == 0) {
+                printf("Il n'y a aucun salon, utilisez /room create pour en créer.\n");
+            } else {
+                printf("%s\n", send_buffer);
 
-            // Asks the user for the room id
-            printf("Avec quel salon souhaitez-vous interagir ? \n");
-            fgets(send_buffer, MAX_MSG_SIZE, stdin);
-            int room_id = atoi(send_buffer);
-            send(server_room_socket, &room_id, sizeof(int), 0); // sends the room id
+                // Asks the user for the room id
+                printf("Avec quel salon souhaitez-vous interagir ? \n");
+                fgets(send_buffer, MAX_MSG_SIZE, stdin);
+                int room_id = atoi(send_buffer);
+                send(server_room_socket, &room_id, sizeof(int), 0); // sends the room id
 
-            // Asks the user what he wants to do with the selected room
-            print_room_actions();
-            printf("Que souhaitez-vous faire ?\n");
-            fgets(send_buffer, MAX_MSG_SIZE, stdin);
-            int action_id = get_action_id(send_buffer);
-            send(server_room_socket, &action_id, sizeof(int), 0); // sends the action id
+                // Asks the user what he wants to do with the selected room
+                print_room_actions();
+                printf("Que souhaitez-vous faire ?\n");
+                fgets(send_buffer, MAX_MSG_SIZE, stdin);
+                int action_id = get_action_id(send_buffer);
+                send(server_room_socket, &action_id, sizeof(int), 0); // sends the action id
 
-            switch (action_id) {
-                case 2: { // modify room
+                switch (action_id) {
+                    case 2: { // modify room
 
-                    // Asks the user what he wants to modify
-                    print_room_modification_actions();
-                    fgets(send_buffer, sizeof(int), stdin);
-                    int modif_action_id = atoi(send_buffer);
-                    send(server_room_socket, &modif_action_id, sizeof(int), 0); // sends the modification action id
+                        // Asks the user what he wants to modify
+                        print_room_modification_actions();
+                        fgets(send_buffer, sizeof(int), stdin);
+                        int modif_action_id = atoi(send_buffer);
+                        send(server_room_socket, &modif_action_id, sizeof(int), 0); // sends the modification action id
 
-                    client_room_modification(server_room_socket, modif_action_id);
-                    break;
-                }
-                default: { // all other cases (just need the server's response)
-                    recv(server_room_socket, send_buffer, MAX_MSG_SIZE, 0); // receives the server's response
-                    printf("%s\n", send_buffer);
-                    break;
+                        client_room_modification(server_room_socket, modif_action_id);
+                        break;
+                    }
+                    default: { // all other cases (just need the server's response)
+                        recv(server_room_socket, send_buffer, MAX_MSG_SIZE, 0); // receives the server's response
+                        printf("%s\n", send_buffer);
+                        break;
+                    }
                 }
             }
 

@@ -14,7 +14,7 @@
                                 * * * * * * * * * * */
 
 /**
- * Returns the amount of clients currently connected to the server.
+ * @brief Gets the amount of clients currently connected to the server.
  * @param max_clients_number
  * @param semaphore the semaphore counter
  * @return the amount of clients currently connected to the server
@@ -26,7 +26,7 @@ int get_client_count(sem_t semaphore) {
 }
 
 /**
- * Returns a client's index based on its socket number.
+ * @brief Gets a client's index based on its socket number.
  * @param clients the clients array
  * @param socket the client's socket number
  * @return the client's index if the client is in the array; -1 if the client was not found
@@ -41,7 +41,7 @@ int get_index_by_socket(Client clients[], int socket) {
 }
 
 /**
- * Returns a client's socket based on its name.
+ * @brief Gets a client's socket based on its name.
  * @param clients the clients array
  * @param socket the client's socket number
  * @return the client's socket if the client is in the array; -1 if the client was not found
@@ -57,7 +57,7 @@ int get_socket_by_name(Client clients[], char *name) {
 }
 
 /**
- * Returns a client's name based in its socket number.
+ * @brief Gets a client's name based in its socket number.
  * @param clients the clients array
  * @param socket the client's socket number
  * @param buffer the client's name
@@ -79,7 +79,7 @@ int get_name_by_socket(Client clients[], int socket, char buffer[MAX_NAME_SIZE])
                                 * * * * * * * * * * */
 
 /**
- * Sends a private message to another client based on it's name. The name must be the
+ * @brief Sends a private message to another client based on it's name. The name must be the
  * first word of the message. If the first word isn't a client name this function will alter the
  * passed string.
  * @param msg the message to send (the first word must be the receiver's name)
@@ -103,7 +103,7 @@ void send_message_to(char *msg, Client clients[], int from_client_socket) {
 }
 
 /**
- * Sends a private message to another client based on it's id.
+ * @brief Sends a private message to another client based on it's id.
  * @param msg the message to send
  * @param clients the clients array
  * @param to_client the receiver of the message
@@ -126,7 +126,7 @@ void send_message_to_client(char *msg, Client clients[], int to_client, int from
 }
 
 /**
- * Checks if a message is a private message (if the first word is a client's nickname).
+ * @brief Checks if a message is a private message (if the first word is a client's nickname).
  * @param msg the message to check
  * @param clients the clients array
  * @return 1 if the message is a private message; 0 otherwise
@@ -146,7 +146,7 @@ int is_private_message(char *msg, Client clients[]) {
 }
 
 /**
- * Broadcasts a message from a given client based on its index.
+ * @brief Broadcasts a message from a given client based on its index.
  * @param msg the message to check
  * @param clients the clients array
  * @return 1 if the message is a private message; 0 otherwise
@@ -154,34 +154,38 @@ int is_private_message(char *msg, Client clients[]) {
 void broadcast_message(char *msg, Client clients[], int from_client_index) {
     int client_socket = clients[from_client_index].client_msg_socket;
     char nom[12];
-    char aff[MAX_MSG_SIZE+15];
+    char aff[MAX_MSG_SIZE + 15];
+
+    bzero(aff, MAX_MSG_SIZE+15);
     get_name_by_socket(clients, clients[from_client_index].client_msg_socket, nom);
-    printf("Pseudo de l'emetteur du message %s\n", nom);
-    strcat(aff,"[");
-    strcat(aff,nom);
-    strcat(aff,"] : ");
-    strcat(aff,msg);
-    printf("[%s](%d): %s", clients[from_client_index].pseudo, from_client_index, msg);
-    for (int j = 0; j < MAX_CLIENTS; j++) { // pour tous les clients du tableau
-        printf("- client : %d, socket : %d\n", j,  clients[j].client_msg_socket);
-        if (clients[j].client_msg_socket != client_socket && clients[j].client_msg_socket != 0) { // envoi
-            send(clients[j].client_msg_socket, aff, MAX_MSG_SIZE, 0); // modifié le j en clients[j]
-            printf("-----> envoyé au client : %s\n", msg);
-        } else {
-            printf("--X--> on n'envoie pas\n");
+    strcat(aff, "[");
+    strcat(aff, nom);
+    strcat(aff, "] : ");
+    strcat(aff, msg);
+
+    for (int j = 0; j < MAX_CLIENTS; j++) {
+        if (clients[j].client_msg_socket != client_socket && clients[j].client_msg_socket != 0) {
+            send(clients[j].client_msg_socket, aff, MAX_MSG_SIZE, 0); // sends the message if the client is connected
         }
     }
-    bzero(aff,MAX_MSG_SIZE+15);
+
+    printf("[Broadcast] %s\n", aff);
+    bzero(aff, MAX_MSG_SIZE+15);
 }
 
-/**
- * Broadcasts a message in a given room.
- */
-void broadcast_message_in_room(char* msg, Client clients[], Room rooms[], int to_room, int from_client_index) {
-    Room client_room = rooms[to_room];
+ /**
+  * @brief Broadcasts a message from a given client in a given room.
+  * @param msg the message that will be broadcast
+  * @param clients the clients array
+  * @param rooms the rooms array
+  * @param room_id the id of the room which will receive the broadcast
+  * @param client_id the id of the sender
+  */
+void broadcast_message_in_room(char* msg, Client clients[], Room rooms[], int room_id, int client_id) {
+    Room client_room = rooms[room_id];
     for (int i = 0; i < sizeof(client_room.membres); i++) {
-        if (client_room.membres[i] == 1 && i!=from_client_index && is_in_room(from_client_index, to_room, clients)==1) { // the client is in the room
-            send_message_to_client(msg, clients, i, from_client_index);
+        if (client_room.membres[i] == 1 && i != client_id && is_in_room(client_id, room_id, clients) == 1) { // the client is in the room
+            send_message_to_client(msg, clients, i, client_id);
         }
     }
 }
@@ -192,7 +196,7 @@ void broadcast_message_in_room(char* msg, Client clients[], Room rooms[], int to
                                 * * * * * * * * * * */
 
 /**
- * Configures the server's socket and updates the socket_return and addr_return values with the
+ * @brief Configures the server's socket and updates the socket_return and addr_return values with the
  * created socket and the created address.
  * @param port the port we want to use
  * @param socket_return the pointer where the created socket will be stored at
@@ -223,7 +227,7 @@ int configure_listening_socket(int port, int* socket_return, struct sockaddr_in 
 }
 
 /**
- * Binds the given sockaddr_in to the given socket.
+ * @brief Binds the given sockaddr_in to the given socket.
  * @param socket the socket we want to bind the address to
  * @param address the address we want to bind
  * @return 0 if successful; -1 if bind or listen failed (with errno positioned)
@@ -246,9 +250,12 @@ int bind_and_listen_on(int socket, struct sockaddr_in address) {
     return 0;
 }
 
-
+/**
+ * @brief Accepts a client's connection of a given socket.
+ * @param server_socket the socket on which we'll accept the client's connection
+ * @return the created client socket
+ */
 int accept_client(int server_socket) {
-
     // clients address initialization
     struct sockaddr_in client_address;
     socklen_t client_address_len = sizeof(struct sockaddr_in);
@@ -439,4 +446,19 @@ void server_room_modification(int socket, int choice, int room_id, Room *rooms) 
             break;
     }
     send(socket, response, MAX_MSG_SIZE, 0);
+}
+
+/**
+ * @brief Gets the number of created rooms.
+ * @param rooms the rooms array
+ * @return the number of rooms currently available
+ */
+int get_room_count(Room rooms[]) {
+    int count = 0;
+    for (int i = 0; i < NB_MAX_ROOM; i++) {
+        if (rooms[i].created == 1) {
+            count += 1;
+        }
+    }
+    return count;
 }
