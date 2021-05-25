@@ -105,9 +105,11 @@ void *messaging_thread_func(void *socket) {
         } else if (strcmp(send_buffer, "/room\n") == 0) {
 
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
-
+            printf("nb room %d\n",get_room_count(rooms));
             if (get_room_count(rooms) == 0) {
-                strcpy(send_buffer, "0");
+                strcpy(send_buffer, "Pas de salon de disponible");
+                printf("send buf%s\n", send_buffer );
+                send(clients[client_index].client_file_receiving_socket, send_buffer, 150, 0);
             } else {
 
                 // sends the room list
@@ -143,7 +145,7 @@ void *messaging_thread_func(void *socket) {
                         break;
                     }
                     case 2: { // modify
-
+                        printf("modify\n");
                         // Receives the modification action id
                         int modif_action_id;
                         recv(clients[client_index].client_file_receiving_socket, &modif_action_id, sizeof(int), 0);
@@ -162,10 +164,12 @@ void *messaging_thread_func(void *socket) {
                         strcpy(send_buffer, "Mauvaise commande...");
                         break;
                 }
+                send(clients[client_index].client_file_receiving_socket, send_buffer, 150, 0);
             }
 
             // sends the response to the client
-            send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
+            //send(clients[client_index].client_file_receiving_socket, send_buffer, 150, 0);
+            printf("%s\n",send_buffer);
 
         } else if (strcmp(send_buffer, "/room create\n") == 0) {
 

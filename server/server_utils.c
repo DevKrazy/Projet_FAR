@@ -96,7 +96,7 @@ void send_message_to(char *msg, Client clients[], int from_client_socket) {
         get_name_by_socket(clients,from_client_socket,nom);
         strcat(affichage,nom);
         strcat(affichage,"] : ");
-        msg[strlen(msg) - 1] = '\0'; // removes the \n
+        //msg[strlen(msg) - 1] = '\0'; // removes the \n
         strcat(affichage, msg + strlen(name) + 1); // moves the pointer after the name
         printf("affichage : %s\n", affichage );
         send(num_socket, affichage, MAX_MSG_SIZE, 0);

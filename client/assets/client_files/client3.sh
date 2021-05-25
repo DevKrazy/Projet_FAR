@@ -1,1 +1,0 @@
-echo "This is the client's test file 3"

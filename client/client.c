@@ -56,11 +56,8 @@ void get_file_to_send(int* size_file) {
     printf("Indiquer le nom du fichier à envoyer au serveur : \n");
     fgets(fileName, sizeof(fileName), stdin);
     fileName[strlen(fileName) - 1] = '\0';
-    char nomTot[40];
-    strcat(nomTot,CLIENT_DIR);
-    strcat(nomTot,fileName);
 
-    int fp = open(nomTot,O_RDONLY);
+    int fp = open(fileName,O_RDONLY);
     int size=0;
     if (fp == -1){
         printf("Ne peux pas ouvrir le fichier suivant : %s\n", fileName);
@@ -71,8 +68,9 @@ void get_file_to_send(int* size_file) {
         file_content[size]=0;
 
     }
-    bzero(nomTot, 40);
+    //bzero(nomTot, 40);
     *size_file=size;
+    free(file_list);
     close(fp);
 }
 
@@ -108,9 +106,10 @@ void* message_sending_thread_func(void *socket) {
             send(server_socket, send_buffer, MAX_MSG_SIZE, 0); // sends the command to the server
             configure_connecting_socket(argv1, argv2 + 1, &server_room_socket, &server_room_address);
             connect_on(server_room_socket, server_room_address);
-
-            recv(server_room_socket, send_buffer, MAX_MSG_SIZE, 0); // receives either the room list
-            if (strcmp(send_buffer, "0") == 0) {
+            printf("avant rcv\n");
+            recv(server_room_socket, send_buffer, 150, 0); // receives either the room list
+            printf("send buffer %s\n", send_buffer );
+            if (strcmp(send_buffer, "Pas de salon de disponible") == 0) {
                 printf("Il n'y a aucun salon, utilisez /room create pour en créer.\n");
             } else {
                 print_title("Salons");
