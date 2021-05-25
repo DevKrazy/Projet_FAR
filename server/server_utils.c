@@ -90,11 +90,13 @@ void send_message_to(char *msg, Client clients[], int from_client_socket) {
     int num_socket = get_socket_by_name(clients, name);
     char nom[MAX_NAME_SIZE];
     char affichage[MAX_MSG_SIZE+15];
+    bzero(affichage, MAX_MSG_SIZE + 15);
     if (num_socket > 0) {
         strcat(affichage,"[");
         get_name_by_socket(clients,from_client_socket,nom);
         strcat(affichage,nom);
         strcat(affichage,"] : ");
+        msg[strlen(msg) - 1] = '\0'; // removes the \n
         strcat(affichage, msg + strlen(name) + 1); // moves the pointer after the name
         printf("affichage : %s\n", affichage );
         send(num_socket, affichage, MAX_MSG_SIZE, 0);
@@ -111,13 +113,13 @@ void send_message_to(char *msg, Client clients[], int from_client_socket) {
  */
 void send_message_to_client(char *msg, Client clients[], int to_client, int from_client) {
     int num_socket = clients[to_client].client_msg_socket;
-    //char copy_msg[MAX_MSG_SIZE];
-    //strcpy(copy_msg, msg);
     char affichage[MAX_MSG_SIZE+15];
+    bzero(affichage, MAX_MSG_SIZE + 15);
     if (num_socket > 0) {
         strcat(affichage,"[");
         strcat(affichage, clients[from_client].pseudo); // peut etre segmentation fault
         strcat(affichage,"] : ");
+        msg[strlen(msg) - 1] = '\0'; // removes the \n
         strcat(affichage, msg);
         printf("affichage : %s\n", affichage );
         send(num_socket, affichage, MAX_MSG_SIZE, 0);
@@ -155,12 +157,13 @@ void broadcast_message(char *msg, Client clients[], int from_client_index) {
     int client_socket = clients[from_client_index].client_msg_socket;
     char nom[12];
     char aff[MAX_MSG_SIZE + 15];
-
     bzero(aff, MAX_MSG_SIZE+15);
+
     get_name_by_socket(clients, clients[from_client_index].client_msg_socket, nom);
     strcat(aff, "[");
     strcat(aff, nom);
     strcat(aff, "] : ");
+    msg[strlen(msg) - 1] = '\0'; // removes the \n
     strcat(aff, msg);
 
     for (int j = 0; j < MAX_CLIENTS; j++) {

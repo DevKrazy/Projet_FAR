@@ -8,8 +8,8 @@
 #include <semaphore.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include "utils/headers/utils.h"
-#include "utils/headers/server_utils.h"
+#include "../common/headers/utils.h"
+#include "headers/server_utils.h"
 
 // TODO: utiliser des puts plutot que des printf
 // TODO: corriger le retour a la ligne en trop quand on reçoit un message (ça vient du strtok surement)
@@ -50,7 +50,6 @@ void* file_receiving_thread_func(void* socket) {
     strcat(path, SERVER_DIR);
     strcat(path, fileName);
     int fp = open(path,  O_WRONLY | O_CREAT, S_IRWXU);
-    printf("%s\n", file_content);
     write(fp, file_content, size);
     printf("Fichier %s reçu et enregistré.\n", fileName);
     close(fp);

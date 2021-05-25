@@ -3,7 +3,7 @@
 #endif
 
 #include <semaphore.h>
-#include "utils.h"
+#include "../../common/headers/utils.h"
 
 #define MAX_CLIENTS 3
 
