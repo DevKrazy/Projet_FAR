@@ -6,7 +6,7 @@ A simple chat program where you can have multiple clients connected to one serve
 
 # How to use as a client
 
-1. Download the code. 
-2. Using a terminal navigate to the client/assets directory.
-3. Type the following command `sh client.sh <server_ip> <server_port>`. This script compiles and runs the client programm.
+1. Download the archive from GitHub. 
+2. Using a terminal navigate to the `client/assets` directory.
+3. Type the following command `sh client.sh <server_ip> <server_port>`. This script compiles and runs the client program.
 4. Inside the client programm you can type `/man` to get some help with the commands.
