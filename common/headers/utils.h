@@ -8,6 +8,7 @@
 #define SERVER_DIR "./server_files/"
 #define CLIENT_DIR "./"
 #define NB_MAX_ROOM 3
+#define MAX_CLIENTS 3
 
 void check_error(int check, char *err_msg);
 
