@@ -3,9 +3,9 @@
 #endif
 
 #include <semaphore.h>
-#include "utils.h"
+#include "../../common/headers/utils.h"
 
-#define MAX_CLIENTS 3
+extern pthread_mutex_t mutex; 
 
 
 typedef struct Room Room;
@@ -25,6 +25,7 @@ struct Client {
 
     int rooms[NB_MAX_ROOM];
     char pseudo[MAX_NAME_SIZE];
+    int mute;
 
     pthread_t messaging_thread;
     pthread_t file_receiving_thread;
@@ -72,3 +73,9 @@ int get_room_id_from_message(char* msg);
 int is_in_room(int client_id, int id_room, Client clients[]);
 
 int get_room_count(Room rooms[]);
+
+int is_valable_id_room(int id_room, Room rooms[]);
+
+void save_rooms(Room rooms[]);
+
+void load_rooms(Room rooms[]);

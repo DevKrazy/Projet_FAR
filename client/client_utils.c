@@ -5,7 +5,8 @@
 #include <dirent.h>
 #include <string.h>
 #include "headers/client_utils.h"
-#include "headers/utils.h"
+#include "../common/headers/utils.h"
+#include <ctype.h>
 
 
 /* * * * * * * * * * *
@@ -93,6 +94,12 @@ void client_room_creation(int socket) {
     fgets(nb_max_members, sizeof(int), stdin);
 
     int max_members = atoi(nb_max_members);
+    while (max_members>MAX_CLIENTS ){
+      printf("Nombre de clients trop elevé, réessayez\n");
+      fgets(nb_max_members, MAX_MSG_SIZE, stdin);
+      max_members = atoi(nb_max_members);
+    }
+
     send(socket, &max_members, sizeof(int), 0);
 
     // receives the response from the server
@@ -109,7 +116,6 @@ void print_room_modification_actions() {
     printf("Que voulez-vous modifier sur ce salon ?\n");
     printf(" - Le nom :                             1\n");
     printf(" - Le nb. max. de membres :             2\n");
-    printf(" - Le nom et le nb. max. de membres :   3\n");
 }
 
 /**
@@ -121,6 +127,13 @@ void print_room_actions() {
     printf(" - Quitter le salon :       /leave\n");
     printf(" - Modifier le salon :      /modify\n");
     printf(" - Supprimer le salon :     /delete\n");
+}
+
+int is_string_a_number(char * saisie){
+  if (isdigit(saisie[0]) != 0){
+    return 1;
+  }
+  return 0;
 }
 
 /**
@@ -146,6 +159,11 @@ void client_room_modification(int socket, int choice) {
             fgets(nb_max_members, sizeof(int), stdin);
 
             int max_members = atoi(nb_max_members);
+            while (max_members>MAX_CLIENTS ){
+              printf("Nombre de clients trop elevé, réessayez\n");
+              fgets(nb_max_members, MAX_MSG_SIZE, stdin);
+               max_members = atoi(nb_max_members);
+            }
             send(socket, &max_members, sizeof(int), 0);
             break;
         }

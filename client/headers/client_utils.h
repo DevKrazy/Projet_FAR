@@ -21,3 +21,5 @@ void print_man();
 void print_title(char* title);
 
 void print_separator(int middle_size);
+
+int is_string_a_number(char * saisie);

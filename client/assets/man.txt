@@ -1,0 +1,12 @@
+ - /man                   Afficher l'aide
+ - /filesrv               Recevoir un fichier
+ - /file                  Envoyer un fichier
+ - /room create           Creer une room 
+ - /room                  Effectuer des actions sur les rooms 
+ - /numRoom votreMessage  Envoyer des messages aux rooms 
+ - /pseudo votreMessage   Envoyer des messages privés 
+ - votreMessage           Envoyer des messages à tout le monde 
+ - /fin                   Quitter et envoyer un message aux autres pour les en informer
+ - /mute                  Ne plus recevoir les messages envoyés à tout le monde
+ - /demute                Annuler la commande mute
+ - /destroyserver         Arreter le serveur et envoyer un message aux clients avant de les fermer     

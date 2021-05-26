@@ -8,8 +8,8 @@
 #include <semaphore.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include "utils/headers/utils.h"
-#include "utils/headers/server_utils.h"
+#include "../common/headers/utils.h"
+#include "headers/server_utils.h"
 
 // TODO: utiliser des puts plutot que des printf
 // TODO: corriger le retour a la ligne en trop quand on reçoit un message (ça vient du strtok surement)
@@ -21,6 +21,9 @@ Room rooms[NB_MAX_ROOM];
 char file_content[MAX_FILE_SIZE];
 char fileName[MAX_MSG_SIZE];
 int file_size;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int server_msg_socket;
 
 //pour enregitrer les fichiers dans le serveur
 int server_file_socket;
@@ -50,7 +53,6 @@ void* file_receiving_thread_func(void* socket) {
     strcat(path, SERVER_DIR);
     strcat(path, fileName);
     int fp = open(path,  O_WRONLY | O_CREAT, S_IRWXU);
-    printf("%s\n", file_content);
     write(fp, file_content, size);
     printf("Fichier %s reçu et enregistré.\n", fileName);
     close(fp);
@@ -80,14 +82,25 @@ void *messaging_thread_func(void *socket) {
         //check_error(-1, "Erreur lors de la réception du message du client.\n");
 
         // Checks if the client closed the discussion or the program
+
         if (recv_res == 0 || strcmp(send_buffer, "/fin\n") == 0) {
+        	strcpy(send_buffer,"Je m en vais, a bientot ! ");
+        	broadcast_message(send_buffer, clients, client_index);
             clients[client_index].client_msg_socket = 0; // client_msg_socket reset
             sem_post(&semaphore);
 
             shutdown(client_socket, 2);
             pthread_exit(0);
         }
-        if (strcmp(send_buffer, "/file\n")==0) {
+        if (strcmp(send_buffer, "/destroyserver\n") == 0){
+
+        	strcpy(send_buffer,"Serveur arreté, aurevoir ! ");
+        	broadcast_message(send_buffer, clients, client_index);
+        	shutdown(server_file_socket,2);
+        	shutdown(server_send_file_socket,2);
+        	shutdown(server_msg_socket,2);
+
+        }else if (strcmp(send_buffer, "/file\n")==0) {
 
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
             pthread_create(&clients[client_index].file_receiving_thread, NULL, file_receiving_thread_func, (void *) (long) clients[client_index].client_file_receiving_socket);
@@ -106,27 +119,34 @@ void *messaging_thread_func(void *socket) {
         } else if (strcmp(send_buffer, "/room\n") == 0) {
 
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
-
+            int nbroom=get_room_count(rooms);
+            printf("nb room %d\n",nbroom);
             if (get_room_count(rooms) == 0) {
-                strcpy(send_buffer, "0");
-            } else {
+                strcpy(send_buffer, "Pas de salon de disponible");
+                printf("send buf%s\n", send_buffer );
+                send(clients[client_index].client_file_receiving_socket, send_buffer, 150, 0);
+            } 
+            else {
 
                 // sends the room list
                 list_Rooms(rooms, send_buffer);
                 send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
-
+              
                 // receives the room id
                 printf("--Reception rooms--\n");
                 int room_id;
                 recv(clients[client_index].client_file_receiving_socket, &room_id, sizeof(int), 0);
-
+                
                 // receives the action id
                 int action_id;
                 recv(clients[client_index].client_file_receiving_socket, &action_id, sizeof(int), 0);
 
                 switch (action_id) {
                     case 0: { // join
-                        if (is_in_room(client_index, room_id, clients) == 0) {
+                        if (is_valable_id_room(room_id, rooms)==0){
+                          strcpy(send_buffer, "Numero de room incorrect");
+                        }
+                        else if (is_in_room(client_index, room_id, clients) == 0) {
                             join_room(client_index, room_id, clients, rooms);
                             strcpy(send_buffer, "Vous avez rejoint le salon.");
                         } else {
@@ -135,7 +155,10 @@ void *messaging_thread_func(void *socket) {
                         break;
                     }
                     case 1: { // leave
-                        if (is_in_room(client_index, room_id, clients) == 1) {
+                        if (is_valable_id_room(room_id, rooms)==0){
+                          strcpy(send_buffer, "Numero de room incorrect");
+                        }
+                        else if (is_in_room(client_index, room_id, clients) == 1) {
                             leave_room(client_index, room_id, clients, rooms);
                             strcpy(send_buffer, "Vous avez quitté le salon.");
                         } else {
@@ -144,7 +167,7 @@ void *messaging_thread_func(void *socket) {
                         break;
                     }
                     case 2: { // modify
-
+                        printf("modify\n");
                         // Receives the modification action id
                         int modif_action_id;
                         recv(clients[client_index].client_file_receiving_socket, &modif_action_id, sizeof(int), 0);
@@ -152,6 +175,7 @@ void *messaging_thread_func(void *socket) {
 
                         server_room_modification(clients[client_index].client_file_receiving_socket, modif_action_id,
                                                  room_id, rooms);
+                        //save_rooms(rooms);
                         break;
                     }
                     case 3: { // delete
@@ -163,17 +187,28 @@ void *messaging_thread_func(void *socket) {
                         strcpy(send_buffer, "Mauvaise commande...");
                         break;
                 }
+		printf("Buffer sent to client: %s\n", send_buffer);
+
+                send(clients[client_index].client_file_receiving_socket, send_buffer, 150, 0);
             }
 
             // sends the response to the client
-            send(clients[client_index].client_file_receiving_socket, send_buffer, MAX_MSG_SIZE, 0);
+            //send(clients[client_index].client_file_receiving_socket, send_buffer, 150, 0);
+            printf("%s\n",send_buffer);
 
         } else if (strcmp(send_buffer, "/room create\n") == 0) {
 
             clients[client_index].client_file_receiving_socket = accept_client(server_file_socket);
             server_room_creation(clients[client_index].client_file_receiving_socket, rooms);
+            //save_rooms(rooms);
 
-        } else { // the client wants to send a message
+        }else if (strcmp(send_buffer, "/mute\n")==0){
+            clients[client_index].mute=1;
+        } 
+        else if (strcmp(send_buffer, "/demute\n")==0){
+            clients[client_index].mute=0;
+        } 
+        else { // the client wants to send a message
 
             int room_id = get_room_id_from_message(send_buffer);
 
@@ -236,12 +271,14 @@ int main(int argc, char *argv[]) {
         printf("Lancement du serveur...\n");
     }
 
+    
+
     // semaphore initialisation
     sem_init(&semaphore, PTHREAD_PROCESS_SHARED, MAX_CLIENTS);
     //sem_init(&file_semaphore, PTHREAD_PROCESS_SHARED, 0);
 
     // configures the server messaging socket
-    int server_msg_socket;
+    
     struct sockaddr_in server_msg_address;
     configure_listening_socket(atoi(argv[1]), &server_msg_socket, &server_msg_address);
     bind_and_listen_on(server_msg_socket, server_msg_address);
@@ -264,6 +301,7 @@ int main(int argc, char *argv[]) {
         rooms[w].nb_max_membre = 3;
         rooms[w].created=0;
     }
+    //load_rooms(rooms);
 
 
     while (1) {
@@ -280,6 +318,7 @@ int main(int argc, char *argv[]) {
         for (int k = 0; k < MAX_CLIENTS; k++) {
             if (clients[k].client_msg_socket == 0) {
                 // we found a client not connected
+                clients[k].mute=0;
                 clients[k].client_msg_socket = client_msg_socket;
                 pthread_create(&clients[k].messaging_thread, NULL, messaging_thread_func, (void *) (long) client_msg_socket);
                 printf("Un client connecté de plus ! %d client(s)\n", get_client_count(semaphore));

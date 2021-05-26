@@ -2,12 +2,13 @@
 #define PROJET_FAR_UTILS_H
 #endif
 
-#define MAX_MSG_SIZE 10000
+#define MAX_MSG_SIZE 1000
 #define MAX_FILE_SIZE 10000
 #define MAX_NAME_SIZE 12
 #define SERVER_DIR "./server_files/"
-#define CLIENT_DIR "./client_files/"
+#define CLIENT_DIR "./"
 #define NB_MAX_ROOM 3
+#define MAX_CLIENTS 3
 
 void check_error(int check, char *err_msg);
 

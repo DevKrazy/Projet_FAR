@@ -6,7 +6,16 @@
 #include <semaphore.h>
 #include <dirent.h>
 #include <regex.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <ctype.h>
+#include <stdio.h>
 #include "headers/server_utils.h"
+
+
 
 
 /* * * * * * * * * * *
@@ -90,11 +99,15 @@ void send_message_to(char *msg, Client clients[], int from_client_socket) {
     int num_socket = get_socket_by_name(clients, name);
     char nom[MAX_NAME_SIZE];
     char affichage[MAX_MSG_SIZE+15];
+    bzero(affichage, MAX_MSG_SIZE + 15);
     if (num_socket > 0) {
         strcat(affichage,"[");
+        pthread_mutex_lock(&mutex);
         get_name_by_socket(clients,from_client_socket,nom);
+        pthread_mutex_unlock(&mutex);
         strcat(affichage,nom);
         strcat(affichage,"] : ");
+        //msg[strlen(msg) - 1] = '\0'; // removes the \n
         strcat(affichage, msg + strlen(name) + 1); // moves the pointer after the name
         printf("affichage : %s\n", affichage );
         send(num_socket, affichage, MAX_MSG_SIZE, 0);
@@ -111,13 +124,13 @@ void send_message_to(char *msg, Client clients[], int from_client_socket) {
  */
 void send_message_to_client(char *msg, Client clients[], int to_client, int from_client) {
     int num_socket = clients[to_client].client_msg_socket;
-    //char copy_msg[MAX_MSG_SIZE];
-    //strcpy(copy_msg, msg);
     char affichage[MAX_MSG_SIZE+15];
+    bzero(affichage, MAX_MSG_SIZE + 15);
     if (num_socket > 0) {
         strcat(affichage,"[");
         strcat(affichage, clients[from_client].pseudo); // peut etre segmentation fault
         strcat(affichage,"] : ");
+        msg[strlen(msg) - 1] = '\0'; // removes the \n
         strcat(affichage, msg);
         printf("affichage : %s\n", affichage );
         send(num_socket, affichage, MAX_MSG_SIZE, 0);
@@ -155,16 +168,17 @@ void broadcast_message(char *msg, Client clients[], int from_client_index) {
     int client_socket = clients[from_client_index].client_msg_socket;
     char nom[12];
     char aff[MAX_MSG_SIZE + 15];
-
     bzero(aff, MAX_MSG_SIZE+15);
+
     get_name_by_socket(clients, clients[from_client_index].client_msg_socket, nom);
     strcat(aff, "[");
     strcat(aff, nom);
     strcat(aff, "] : ");
+    msg[strlen(msg) - 1] = '\0'; // removes the \n
     strcat(aff, msg);
 
     for (int j = 0; j < MAX_CLIENTS; j++) {
-        if (clients[j].client_msg_socket != client_socket && clients[j].client_msg_socket != 0) {
+        if (clients[j].client_msg_socket != client_socket && clients[j].client_msg_socket != 0 && clients[j].mute==0) {
             send(clients[j].client_msg_socket, aff, MAX_MSG_SIZE, 0); // sends the message if the client is connected
         }
     }
@@ -421,7 +435,7 @@ void delete_room(int room_id, Client clients[], Room rooms[]) {
 void server_room_modification(int socket, int choice, int room_id, Room *rooms) {
     printf("## Modification du salon n° %d.\n", room_id);
     char response[MAX_MSG_SIZE];
-
+  
     switch(choice){
         case 1: { // modifies the room's name
             char room_name[20];
@@ -461,4 +475,93 @@ int get_room_count(Room rooms[]) {
         }
     }
     return count;
+}
+
+int is_valable_id_room(int id_room, Room rooms[]){
+  if (rooms[id_room].created==1){
+    return 1;
+  }
+  return 0;
+}
+
+
+  
+void save_rooms(Room rooms[]) {
+   /* printf("Sauvegarde des salons\n");
+
+    char* write_buffer = malloc(1);
+    int realloc_size = 0;
+
+    // serializes all of the created rooms
+    for (int r = 0; r < NB_MAX_ROOM; r++) {
+      if (is_valable_id_room(r, rooms)==1 ) {
+        char serialized_room[30];
+        char room_id[5];    
+
+        sprintf(room_id, "%d", r);
+        strcat(serialized_room, room_id);
+
+        strcat(serialized_room, ":");
+        strcat(serialized_room, rooms[r].room_name);
+        strcat(serialized_room, ":");
+
+        sprintf(room_id, "%d", rooms[r].nb_max_membre);
+        strcat(serialized_room, room_id);
+
+        strcat(serialized_room, "\n");
+
+        realloc_size += strlen(serialized_room);
+        write_buffer = realloc(write_buffer, realloc_size);
+        strcat(write_buffer, serialized_room);
+        bzero(serialized_room,30);
+        bzero(room_id,5);
+
+      }
+    }
+    
+    printf("Serialized room: %s\n", write_buffer);
+
+    // writes the serialized rooms to the room file
+    int fp = open("rooms.txt",  O_WRONLY | O_CREAT, S_IRWXU);
+    write(fp, write_buffer, realloc_size);
+    close(fp);
+    free(write_buffer);*/
+}
+
+
+void load_rooms(Room rooms[]) {
+   /* printf("Inside load_rooms");
+    FILE* file;
+    char* line = NULL;
+    size_t len = 0;
+
+    file = fopen("./rooms.txt", "r");
+    printf("After fopen rooms.txt");
+
+    while (getline(&line, &len, file) != -1) {
+        printf("Inside while");
+        char* token;
+
+        token = strtok(line, ":");
+        printf("Token 1 = %s", token);
+        int room_id = atoi(token);
+
+        token = strtok(line, ":");
+        printf("Token 2 = %s", token);
+        char room_name[20];
+        strcpy(room_name, token);
+
+        int nb_max_members = atoi(line);
+        printf("Final line = %s", line);
+
+        // creates the room with the deserialized information
+        if (rooms[room_id].created == 0) {
+            rooms[room_id].created = 1;
+            rooms[room_id].nb_max_membre = nb_max_members;
+            strcpy(rooms[room_id].room_name, room_name);
+        }
+    }
+
+    fclose(file);
+  */
 }
